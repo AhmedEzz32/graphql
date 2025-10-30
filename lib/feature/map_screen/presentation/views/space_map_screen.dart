@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import '../view_models/map_bloc.dart';
-import '../view_models/map_event.dart';
-import '../view_models/map_state.dart';
-import '../helpers/space_map_helper.dart';
+import 'widgets/space_map_widget.dart';
 
 class SpaceMapScreen extends StatefulWidget {
   const SpaceMapScreen({super.key});
@@ -14,292 +10,160 @@ class SpaceMapScreen extends StatefulWidget {
 }
 
 class _SpaceMapScreenState extends State<SpaceMapScreen> {
-  final Set<Marker> _markers = {};
-  final Set<Polyline> _polylines = {};
-  bool _showTrajectory = false;
-
-  // Filter options
-  bool _showLaunchSites = true;
-  bool _showLandingZones = true;
-
-  @override
-  void initState() {
-    super.initState();
-    context.read<MapBloc>().add(const LoadMapData());
-  }
+  final GlobalKey<State<SpaceMapWidget>> _mapWidgetKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SpaceX Launch Map'),
+        title: const Text('Simple Route Map'),
         backgroundColor: const Color(0xFF1a1a2e),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
+            icon: const Icon(Icons.search),
+            onPressed: _showSearchOptions,
+            tooltip: 'Search viewing locations',
           ),
           IconButton(
-            icon: Icon(_showTrajectory ? Icons.timeline : Icons.show_chart),
-            onPressed: _toggleTrajectory,
+            icon: const Icon(Icons.route),
+            tooltip: 'Show Route',
+            onPressed: _createSimpleRoute,
           ),
         ],
       ),
-      body: BlocListener<MapBloc, MapState>(
-        listener: (context, state) {
-          if (state is MapLoaded) {
-            // _updateMarkersAndPolylines(state);
-          }
-        },
-        child: BlocBuilder<MapBloc, MapState>(
-          builder: (context, state) {
-            if (state is MapLoading) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6B35)),
-                ),
-              );
-            }
+      body: SpaceMapWidget(
+        key: _mapWidgetKey,
+      ),
+    );
+  }
 
-            if (state is MapError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error,
-                      size: 64,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      state.message,
-                      style: const TextStyle(fontSize: 16),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.read<MapBloc>().add(const LoadMapData());
-                      },
-                      child: const Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
+  void _createSimpleRoute() {
+    final state = _mapWidgetKey.currentState;
+    if (state != null) {
+      const origin = LatLng(37.7749, -122.4194);
+      const destination = LatLng(37.3382, -121.8863);
+      (state as dynamic).createRoute(origin, destination);
+    }
+  }
 
-            if (state is MapLoaded) {
-              return Stack(
-                children: [
-                  GoogleMap(
-                    onMapCreated: _onMapCreated,
-                    initialCameraPosition: const CameraPosition(
-                      target: LatLng(28.6139, -80.6068), // Kennedy Space Center
-                      zoom: 6,
-                    ),
-                    markers: _markers,
-                    polylines: _polylines,
-                    mapType: MapType.normal,
-                    style: _getSpaceMapStyle(),
-                    myLocationEnabled: true,
-                    myLocationButtonEnabled: false,
-                    zoomControlsEnabled: false,
+  void _showSearchOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1a1a2e),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Search Locations',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  _buildSearchBar(),
-                  _buildLegend(),
-                  _buildLocationButton(),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: 'Search for a location...',
+                hintStyle: TextStyle(color: Colors.white60),
+                prefixIcon: Icon(Icons.search, color: Colors.white60),
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white60),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white60),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.blue),
+                ),
+              ),
+              onSubmitted: (value) {
+                // Handle search here
+                Navigator.pop(context);
+                _searchLocation(value);
+              },
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Popular Locations:',
+              style: TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: ListView(
+                children: [
+                  _buildLocationTile('San Francisco', 37.7749, -122.4194),
+                  _buildLocationTile('San Jose', 37.3382, -121.8863),
+                  _buildLocationTile('Los Angeles', 34.0522, -118.2437),
+                  _buildLocationTile('New York', 40.7128, -74.0060),
+                  _buildLocationTile('Miami', 25.7617, -80.1918),
                 ],
-              );
-            }
-
-            return const Center(child: Text('Initializing map...'));
-          },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _onMapCreated(GoogleMapController controller) {}
-
-  Widget _buildSearchBar() {
-    return SpaceMapHelper.buildSearchBar(
-      onSearch: (query) {
-        context.read<MapBloc>().add(SearchPlaces(query));
+  Widget _buildLocationTile(String name, double lat, double lng) {
+    return ListTile(
+      title: Text(
+        name,
+        style: const TextStyle(color: Colors.white),
+      ),
+      subtitle: Text(
+        '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
+        style: const TextStyle(color: Colors.white60),
+      ),
+      leading: const Icon(Icons.location_on, color: Colors.blue),
+      onTap: () {
+        Navigator.pop(context);
+        _goToLocation(lat, lng, name);
       },
     );
   }
 
-  Widget _buildLegend() {
-    return SpaceMapHelper.buildLegend();
-  }
-
-  Widget _buildLocationButton() {
-    return SpaceMapHelper.buildLocationButton(
-      onPressed: _getCurrentLocation,
+  void _searchLocation(String query) {
+    // Simple search implementation
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Searching for: $query'),
+        backgroundColor: Colors.blue,
+      ),
     );
   }
 
-  void _getCurrentLocation() async {
-    try {
-      context.read<MapBloc>().add(const LoadMapData());
-    } catch (e) {
+  void _goToLocation(double lat, double lng, String name) {
+    final state = _mapWidgetKey.currentState;
+    if (state != null) {
+      const origin = LatLng(37.7749, -122.4194);
+      final destination = LatLng(lat, lng);
+
+      (state as dynamic).createRoute(origin, destination);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to get location: $e')),
+        SnackBar(
+          content: Text('Creating route to: $name'),
+          backgroundColor: Colors.green,
+        ),
       );
-    }
-  }
-
-  void _showFilterDialog() {
-    SpaceMapHelper.showFilterDialog(
-      context,
-      showLaunchSites: _showLaunchSites,
-      showLandingZones: _showLandingZones,
-      showDroneShips: true,
-      onLaunchSitesChanged: (value) {
-        setState(() {
-          _showLaunchSites = value;
-        });
-      },
-      onLandingZonesChanged: (value) {
-        setState(() {
-          _showLandingZones = value;
-        });
-      },
-    );
-  }
-
-  String _getSpaceMapStyle() {
-    return SpaceMapHelper.getSpaceMapStyle();
-  }
-
-  void _toggleTrajectory() {
-    if (_showTrajectory) {
-      context.read<MapBloc>().add(const HideTrajectory());
-      setState(() {
-        _showTrajectory = false;
-      });
-    } else {
-      // Show trajectory for Kennedy Space Center as default
-      context.read<MapBloc>().add(const ShowTrajectory('ksc_lc_39a'));
-      setState(() {
-        _showTrajectory = true;
-      });
     }
   }
 }
-
-  // void _findObservationPoints(SpaceLocation location) {
-  //   // For now, just show a placeholder since the MapState structure is different
-  //   setState(() {});
-
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     const SnackBar(
-  //         content: Text('Finding viewing spots feature coming soon!')),
-  //   );
-  // }
-
-  // void _showTrajectoryForLocation(SpaceLocation location) {
-  //   context.read<MapBloc>().add(ShowTrajectory(location.id));
-  //   setState(() {
-  //     _showTrajectory = true;
-  //   });
-  // }
-
-  // bool _shouldShowLocation(SpaceLocation location) {
-  //   return SpaceMapHelper.shouldShowLocation(
-  //     location,
-  //     showLaunchSites: _showLaunchSites,
-  //     showLandingZones: _showLandingZones,
-  //     showDroneShips: true,
-  //   );
-  // }
-
-  // Future<BitmapDescriptor> _createBitmapDescriptorFromWidget(
-  //     Widget widget) async {
-  //   // For now, use default markers - in a real app you'd render widgets to bitmaps
-  //   // This is a simplified implementation
-
-  //   // You can create custom marker icons using BitmapDescriptor.fromAsset()
-  //   // or use the default markers for now
-  //   return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
-  // }
-
-  // void _onMarkerTapped(SpaceLocation location) {
-  //   setState(() {});
-
-  //   // Show bottom sheet with location details
-  //   showModalBottomSheet(
-  //     context: context,
-  //     backgroundColor: const Color(0xFF1a1a2e),
-  //     builder: (context) => SpaceMapHelper.buildLocationDetailsSheet(
-  //       location,
-  //       onFindViewingSpots: () {
-  //         Navigator.pop(context);
-  //         _findObservationPoints(location);
-  //       },
-  //       onShowTrajectory: () {
-  //         Navigator.pop(context);
-  //         _showTrajectoryForLocation(location);
-  //       },
-  //     ),
-  //   );
-  // }
-
- /* Future<void> _updateMarkersAndPolylines(MapLoaded state) async {
-    final markers = <Marker>{};
-    final polylines = <Polyline>{};
-
-    // Add location markers
-    for (final location in state.filteredLocations) {
-      if (!_shouldShowLocation(location)) continue;
-
-      final marker = await _createMarkerForLocation(location);
-      if (marker != null) {
-        markers.add(marker);
-      }
-    }
-
-    // Add observation point markers
-    if (_showObservationPoints) {
-      for (final obsPoint in state.observationPoints) {
-        final marker = await _createObservationMarker(obsPoint);
-        if (marker != null) {
-          markers.add(marker);
-        }
-      }
-    }
-
-    // Add user location marker
-    if (state.userLatitude != null && state.userLongitude != null) {
-      final userMarker = await _createUserLocationMarker(
-        LatLng(state.userLatitude!, state.userLongitude!),
-      );
-      if (userMarker != null) {
-        markers.add(userMarker);
-      }
-    }
-
-    // Add trajectory polyline
-    if (state.currentTrajectory != null && _showTrajectory) {
-      final polyline = _createTrajectoryPolyline(state.currentTrajectory!);
-      polylines.add(polyline);
-
-      // Add trajectory point markers
-      for (int i = 0; i < state.currentTrajectory!.points.length; i += 10) {
-        final point = state.currentTrajectory!.points[i];
-        final marker = await _createTrajectoryMarker(point, i);
-        if (marker != null) {
-          markers.add(marker);
-        }
-      }
-    }
-
-    setState(() {
-      _markers.clear();
-      _markers.addAll(markers);
-      _polylines.clear();
-      _polylines.addAll(polylines);
-    });
-  } */

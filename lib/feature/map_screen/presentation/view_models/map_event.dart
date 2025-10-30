@@ -8,10 +8,9 @@ abstract class MapEvent extends Equatable {
 }
 
 class LoadMapData extends MapEvent {
-
   final int limit;
   final int offset;
-  
+
   const LoadMapData({
     this.limit = 50,
     this.offset = 0,
@@ -73,9 +72,56 @@ class UpdateUserLocation extends MapEvent {
 
 class SearchPlaces extends MapEvent {
   final String query;
+  final double? userLatitude;
+  final double? userLongitude;
 
-  const SearchPlaces(this.query);
+  const SearchPlaces({
+    required this.query,
+    this.userLatitude,
+    this.userLongitude,
+  });
 
   @override
-  List<Object?> get props => [query];
+  List<Object?> get props => [query, userLatitude, userLongitude];
+}
+
+class SearchLaunchViewingLocations extends MapEvent {
+  final double launchSiteLatitude;
+  final double launchSiteLongitude;
+  final double? userLatitude;
+  final double? userLongitude;
+
+  const SearchLaunchViewingLocations({
+    required this.launchSiteLatitude,
+    required this.launchSiteLongitude,
+    this.userLatitude,
+    this.userLongitude,
+  });
+
+  @override
+  List<Object?> get props => [
+        launchSiteLatitude,
+        launchSiteLongitude,
+        userLatitude,
+        userLongitude,
+      ];
+}
+
+class LoadConstantMapData extends MapEvent {
+  const LoadConstantMapData();
+}
+
+class SelectPlace extends MapEvent {
+  final double latitude;
+  final double longitude;
+  final String placeName;
+
+  const SelectPlace({
+    required this.latitude,
+    required this.longitude,
+    required this.placeName,
+  });
+
+  @override
+  List<Object?> get props => [latitude, longitude, placeName];
 }
