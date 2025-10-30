@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spacex_information_app/feature/company_screen/persentation/views/widgets/build_company_info_widget.dart';
-import '../../../../models/company.dart';
+import '../view_model/company.dart';
 
 class CompanyScreen extends StatefulWidget {
   const CompanyScreen({super.key});

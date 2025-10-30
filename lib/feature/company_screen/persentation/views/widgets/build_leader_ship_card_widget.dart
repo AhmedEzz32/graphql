@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:spacex_information_app/feature/company_screen/persentation/views/widgets/build_leader_row_widget.dart';
-import 'package:spacex_information_app/models/company.dart';
+import 'package:spacex_information_app/feature/company_screen/persentation/view_model/company.dart';
 
 Widget buildLeadershipCardWidget(Company company) {
   const divider = Divider();

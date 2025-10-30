@@ -290,44 +290,115 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
       emit(const GraphQLLaunchLoading());
 
       final client = GraphQLConfig.clientInstance;
+      List<GraphQLLaunch> allLaunches = [];
 
-      // Build filter variables
-      final Map<String, dynamic> variables = <String, dynamic>{
-        'limit': 50, // Get more results for filtering
-      };
+      // Determine which query to use based on filters
+      if (event.showPast == true && event.showUpcoming != true) {
+        // Fetch only past launches
+        final QueryOptions options = QueryOptions(
+          document: gql(GET_PAST_LAUNCHES_QUERY),
+          variables: {
+            'limit': 50,
+            'offset': 0,
+          },
+          fetchPolicy: FetchPolicy.networkOnly,
+        );
 
-      if (event.rocketName != null) {
-        variables['rocket_name'] = event.rocketName;
+        final QueryResult result = await client.query(options);
+
+        if (result.hasException) {
+          emit(GraphQLLaunchError(
+            message: GraphQLErrorHandler.handleError(result.exception!),
+            isNetworkError: _isNetworkError(result.exception!),
+          ));
+          return;
+        }
+
+        final List<dynamic> launchData = result.data?['launchesPast'] ?? [];
+        allLaunches =
+            launchData.map((json) => GraphQLLaunch.fromJson(json)).toList();
+      } else if (event.showUpcoming == true && event.showPast != true) {
+        // Fetch only upcoming launches
+        final QueryOptions options = QueryOptions(
+          document: gql(GET_UPCOMING_LAUNCHES_QUERY),
+          variables: {
+            'limit': 50,
+            'offset': 0,
+          },
+          fetchPolicy: FetchPolicy.networkOnly,
+        );
+
+        final QueryResult result = await client.query(options);
+
+        if (result.hasException) {
+          emit(GraphQLLaunchError(
+            message: GraphQLErrorHandler.handleError(result.exception!),
+            isNetworkError: _isNetworkError(result.exception!),
+          ));
+          return;
+        }
+
+        final List<dynamic> launchData = result.data?['launchesUpcoming'] ?? [];
+        allLaunches =
+            launchData.map((json) => GraphQLLaunch.fromJson(json)).toList();
+      } else {
+        // Fetch all launches (default or when both filters are applied)
+        final QueryOptions options = QueryOptions(
+          document: gql(GET_LAUNCHES_QUERY),
+          variables: {
+            'limit': 50,
+            'offset': 0,
+          },
+          fetchPolicy: FetchPolicy.networkOnly,
+        );
+
+        final QueryResult result = await client.query(options);
+
+        if (result.hasException) {
+          emit(GraphQLLaunchError(
+            message: GraphQLErrorHandler.handleError(result.exception!),
+            isNetworkError: _isNetworkError(result.exception!),
+          ));
+          return;
+        }
+
+        final List<dynamic> launchData = result.data?['launches'] ?? [];
+        allLaunches =
+            launchData.map((json) => GraphQLLaunch.fromJson(json)).toList();
+
+        // Apply local filtering if both past and upcoming are selected or neither
+        if (event.showPast == true && event.showUpcoming == true) {
+          // Show all - no additional filtering needed
+        } else if (event.showPast == true && event.showUpcoming != true) {
+          allLaunches =
+              allLaunches.where((launch) => launch.upcoming != true).toList();
+        } else if (event.showUpcoming == true && event.showPast != true) {
+          allLaunches =
+              allLaunches.where((launch) => launch.upcoming == true).toList();
+        }
       }
-      if (event.launchYear != null) {
-        variables['launch_year'] = event.launchYear;
-      }
-      if (event.launchSuccess != null) {
-        variables['launch_success'] = event.launchSuccess;
-      }
 
-      final QueryOptions options = QueryOptions(
-        document: gql(GET_LAUNCHES_QUERY),
-        variables: variables,
-        fetchPolicy: FetchPolicy.networkOnly,
-      );
-
-      final QueryResult result = await client.query(options);
-
-      if (result.hasException) {
-        emit(GraphQLLaunchError(
-          message: GraphQLErrorHandler.handleError(result.exception!),
-          isNetworkError: _isNetworkError(result.exception!),
-        ));
-        return;
+      // Apply search filter if provided
+      if (event.searchQuery != null && event.searchQuery!.isNotEmpty) {
+        final searchQuery = event.searchQuery!.toLowerCase();
+        allLaunches = allLaunches.where((launch) {
+          return launch.missionName.toLowerCase().contains(searchQuery) ||
+              launch.rocket.name.toLowerCase().contains(searchQuery) ||
+              (launch.details?.toLowerCase().contains(searchQuery) ?? false);
+        }).toList();
       }
 
-      final List<dynamic> launchData = result.data?['launches'] ?? [];
-      final List<GraphQLLaunch> launches =
-          launchData.map((json) => GraphQLLaunch.fromJson(json)).toList();
+      // Apply rocket name filter if provided
+      if (event.rocketName != null && event.rocketName!.isNotEmpty) {
+        allLaunches = allLaunches
+            .where((launch) => launch.rocket.name
+                .toLowerCase()
+                .contains(event.rocketName!.toLowerCase()))
+            .toList();
+      }
 
       emit(GraphQLLaunchesLoaded(
-        launches: launches,
+        launches: allLaunches,
         currentFilter: 'filtered',
       ));
     } catch (e) {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:spacex_information_app/core/widgets/error_widget.dart';
 import 'package:spacex_information_app/feature/launch_screen/persentation/view_model/data/launch_event_bloc.dart';
-import 'package:spacex_information_app/feature/company_screen/persentation/views/widgets/build_error_widget.dart';
 import 'package:spacex_information_app/feature/launch_screen/persentation/view/widgets/build_launch_details_card_widget.dart';
 import 'package:spacex_information_app/feature/launch_screen/persentation/view_model/data/launch_bloc_state.dart';
 
@@ -33,10 +33,10 @@ class _LaunchDetailsScreenState extends State<LaunchDetailsScreen> {
           if (state is GraphQLLaunchLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is GraphQLLaunchDetailsLoaded) {
-            return buildGraphQLLaunchDetailsCard(
-                context, state.launch, DateTime.parse(state.launch.launchDateUtc!));
+            return buildGraphQLLaunchDetailsCard(context, state.launch,
+                DateTime.parse(state.launch.launchDateUtc!));
           } else if (state is GraphQLLaunchError) {
-            return buildErrorWidget(context, state.message, () {
+            return buildErrorWidget(state.message, context, () {
               context
                   .read<GraphQLLaunchBloc>()
                   .add(FetchLaunchDetails(widget.launchId));

@@ -7,7 +7,6 @@ import 'package:spacex_information_app/feature/launch_screen/persentation/view_m
 import 'package:spacex_information_app/feature/map_screen/data/landpad_model.dart';
 import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/graphql_rocket_models.dart';
 import '../../data/mock_space_data_service.dart';
-import '../../data/models/space_location.dart';
 import 'map_event.dart';
 import 'map_state.dart';
 
@@ -27,6 +26,7 @@ class MapBloc extends Bloc<MapEvent, MapState> {
       emit(const MapLoading());
 
       final client = GraphQLConfig.clientInstance;
+
       /// TODO: Modify queries to fetch launching locations, landing zones, and rockets separately
       final QueryOptions launchingOptions = QueryOptions(
         document: gql(GET_UPCOMING_LAUNCHES_QUERY),
@@ -54,28 +54,34 @@ class MapBloc extends Bloc<MapEvent, MapState> {
       );
 
       final List<QueryResult> result = await Future.wait<QueryResult>([
-        client.query(launchingOptions), /// for launching locations
-        client.query(landingOptions), /// for landing zones
-        client.query(rocketsOptions), /// for rockets
+        client.query(launchingOptions),
+
+        /// for launching locations
+        client.query(landingOptions),
+
+        /// for landing zones
+        client.query(rocketsOptions),
+
+        /// for rockets
       ]);
 
       if (result.any((result) => result.hasException)) {
-        final exception = result
-            .firstWhere((result) => result.hasException)
-            .exception!;
-        emit(MapError(
-            'Error loading map data: ${_getErrorMessage(exception)}'));
+        final exception =
+            result.firstWhere((result) => result.hasException).exception!;
+        emit(
+            MapError('Error loading map data: ${_getErrorMessage(exception)}'));
         return;
       }
 
-      final List<dynamic> launchData = result[0].data?['launchesUpcoming'] ?? [];
+      final List<dynamic> launchData =
+          result[0].data?['launchesUpcoming'] ?? [];
       final List<GraphQLLaunch> launches =
           launchData.map((json) => GraphQLLaunch.fromJson(json)).toList();
 
       final List<dynamic> landingData = result[1].data?['landpads'] ?? [];
       final List<LandpadModel> locations =
           landingData.map((json) => LandpadModel.fromJson(json)).toList();
-      
+
       final List<dynamic> rocketData = result[2].data?['rockets'] ?? [];
       final List<GraphQLRocket> rockets =
           rocketData.map((json) => GraphQLRocket.fromJson(json)).toList();

@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:spacex_information_app/core/services/location_permission_service.dart';
-import 'dart:async';
-import '../../data/models/space_location.dart';
 import '../view_models/map_bloc.dart';
 import '../view_models/map_event.dart';
 import '../view_models/map_state.dart';
-import 'widgets/custom_map_markers.dart';
+import '../helpers/space_map_helper.dart';
 
 class SpaceMapScreen extends StatefulWidget {
   const SpaceMapScreen({super.key});
@@ -19,13 +16,11 @@ class SpaceMapScreen extends StatefulWidget {
 class _SpaceMapScreenState extends State<SpaceMapScreen> {
   final Set<Marker> _markers = {};
   final Set<Polyline> _polylines = {};
-  String _selectedLocationId = '';
   bool _showTrajectory = false;
 
   // Filter options
   bool _showLaunchSites = true;
   bool _showLandingZones = true;
-  bool _showObservationPoints = false;
 
   @override
   void initState() {
@@ -128,7 +123,131 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
 
   void _onMapCreated(GoogleMapController controller) {}
 
-  /* Future<void> _updateMarkersAndPolylines(MapLoaded state) async {
+  Widget _buildSearchBar() {
+    return SpaceMapHelper.buildSearchBar(
+      onSearch: (query) {
+        context.read<MapBloc>().add(SearchPlaces(query));
+      },
+    );
+  }
+
+  Widget _buildLegend() {
+    return SpaceMapHelper.buildLegend();
+  }
+
+  Widget _buildLocationButton() {
+    return SpaceMapHelper.buildLocationButton(
+      onPressed: _getCurrentLocation,
+    );
+  }
+
+  void _getCurrentLocation() async {
+    try {
+      context.read<MapBloc>().add(const LoadMapData());
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to get location: $e')),
+      );
+    }
+  }
+
+  void _showFilterDialog() {
+    SpaceMapHelper.showFilterDialog(
+      context,
+      showLaunchSites: _showLaunchSites,
+      showLandingZones: _showLandingZones,
+      showDroneShips: true,
+      onLaunchSitesChanged: (value) {
+        setState(() {
+          _showLaunchSites = value;
+        });
+      },
+      onLandingZonesChanged: (value) {
+        setState(() {
+          _showLandingZones = value;
+        });
+      },
+    );
+  }
+
+  String _getSpaceMapStyle() {
+    return SpaceMapHelper.getSpaceMapStyle();
+  }
+
+  void _toggleTrajectory() {
+    if (_showTrajectory) {
+      context.read<MapBloc>().add(const HideTrajectory());
+      setState(() {
+        _showTrajectory = false;
+      });
+    } else {
+      // Show trajectory for Kennedy Space Center as default
+      context.read<MapBloc>().add(const ShowTrajectory('ksc_lc_39a'));
+      setState(() {
+        _showTrajectory = true;
+      });
+    }
+  }
+}
+
+  // void _findObservationPoints(SpaceLocation location) {
+  //   // For now, just show a placeholder since the MapState structure is different
+  //   setState(() {});
+
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     const SnackBar(
+  //         content: Text('Finding viewing spots feature coming soon!')),
+  //   );
+  // }
+
+  // void _showTrajectoryForLocation(SpaceLocation location) {
+  //   context.read<MapBloc>().add(ShowTrajectory(location.id));
+  //   setState(() {
+  //     _showTrajectory = true;
+  //   });
+  // }
+
+  // bool _shouldShowLocation(SpaceLocation location) {
+  //   return SpaceMapHelper.shouldShowLocation(
+  //     location,
+  //     showLaunchSites: _showLaunchSites,
+  //     showLandingZones: _showLandingZones,
+  //     showDroneShips: true,
+  //   );
+  // }
+
+  // Future<BitmapDescriptor> _createBitmapDescriptorFromWidget(
+  //     Widget widget) async {
+  //   // For now, use default markers - in a real app you'd render widgets to bitmaps
+  //   // This is a simplified implementation
+
+  //   // You can create custom marker icons using BitmapDescriptor.fromAsset()
+  //   // or use the default markers for now
+  //   return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
+  // }
+
+  // void _onMarkerTapped(SpaceLocation location) {
+  //   setState(() {});
+
+  //   // Show bottom sheet with location details
+  //   showModalBottomSheet(
+  //     context: context,
+  //     backgroundColor: const Color(0xFF1a1a2e),
+  //     builder: (context) => SpaceMapHelper.buildLocationDetailsSheet(
+  //       location,
+  //       onFindViewingSpots: () {
+  //         Navigator.pop(context);
+  //         _findObservationPoints(location);
+  //       },
+  //       onShowTrajectory: () {
+  //         Navigator.pop(context);
+  //         _showTrajectoryForLocation(location);
+  //       },
+  //     ),
+  //   );
+  // }
+
+ /* Future<void> _updateMarkersAndPolylines(MapLoaded state) async {
     final markers = <Marker>{};
     final polylines = <Polyline>{};
 
@@ -184,725 +303,3 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
       _polylines.addAll(polylines);
     });
   } */
-
-  bool _shouldShowLocation(SpaceLocation location) {
-    switch (location.type) {
-      case LocationType.launchSite:
-        return _showLaunchSites;
-      case LocationType.landingZone:
-        return _showLandingZones;
-      default:
-        return true;
-    }
-  }
-
-  Future<Marker?> _createMarkerForLocation(SpaceLocation location) async {
-    try {
-      final isSelected = _selectedLocationId == location.id;
-
-      Widget markerWidget;
-      switch (location.type) {
-        case LocationType.launchSite:
-          markerWidget = CustomMapMarkers.buildLaunchSiteMarker(
-            location: location,
-            isSelected: isSelected,
-          );
-          break;
-        case LocationType.landingZone:
-          markerWidget = CustomMapMarkers.buildLandingZoneMarker(
-            location: location,
-            isSelected: isSelected,
-          );
-          break;
-        case LocationType.droneShip:
-          markerWidget = CustomMapMarkers.buildDroneShipMarker(
-            location: location,
-            isSelected: isSelected,
-          );
-          break;
-        default:
-          return null;
-      }
-
-      final icon = await _createBitmapDescriptorFromWidget(markerWidget);
-
-      return Marker(
-        markerId: MarkerId(location.id),
-        position: LatLng(location.latitude, location.longitude),
-        icon: icon,
-        infoWindow: InfoWindow(
-          title: location.name,
-          snippet: location.description,
-        ),
-        onTap: () => _onMarkerTapped(location),
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-
-  Future<Marker?> _createObservationMarker(ObservationLocation location) async {
-    try {
-      final markerWidget = CustomMapMarkers.buildObservationPointMarker(
-        location: location,
-        isRecommended: location.isRecommended,
-      );
-
-      final icon = await _createBitmapDescriptorFromWidget(markerWidget);
-
-      return Marker(
-        markerId: MarkerId('obs_${location.latitude}_${location.longitude}'),
-        position: LatLng(location.latitude, location.longitude),
-        icon: icon,
-        infoWindow: InfoWindow(
-          title: location.name,
-          snippet: 'Distance: ${location.distance.toStringAsFixed(1)}km • '
-              'Visibility: ${(location.visibility * 100).toStringAsFixed(0)}%',
-        ),
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-
-  Future<Marker?> _createUserLocationMarker(LatLng position) async {
-    try {
-      final markerWidget = CustomMapMarkers.buildUserLocationMarker();
-      final icon = await _createBitmapDescriptorFromWidget(markerWidget);
-
-      return Marker(
-        markerId: const MarkerId('user_location'),
-        position: position,
-        icon: icon,
-        infoWindow: const InfoWindow(
-          title: 'Your Location',
-        ),
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-
-  Future<Marker?> _createTrajectoryMarker(
-      TrajectoryPoint point, int index) async {
-    try {
-      final markerWidget = CustomMapMarkers.buildTrajectoryMarker(
-        point: point,
-        isActive: index % 30 == 0, // Show icon every 30 points
-      );
-
-      final icon = await _createBitmapDescriptorFromWidget(markerWidget);
-
-      return Marker(
-        markerId: MarkerId('trajectory_$index'),
-        position: LatLng(point.latitude, point.longitude),
-        icon: icon,
-        infoWindow: InfoWindow(
-          title: 'T+${point.timestamp}s',
-          snippet: '${point.phase.toUpperCase()} • '
-              'Alt: ${(point.altitude / 1000).toStringAsFixed(1)}km • '
-              'Vel: ${point.velocity.toStringAsFixed(0)}m/s',
-        ),
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-
-  Polyline _createTrajectoryPolyline(FlightTrajectory trajectory) {
-    final points = trajectory.points
-        .map((point) => LatLng(point.latitude, point.longitude))
-        .toList();
-
-    return Polyline(
-      polylineId: PolylineId('trajectory_${trajectory.launchId}'),
-      points: points,
-      color: const Color(0xFFFF6B35),
-      width: 3,
-      patterns: [PatternItem.dash(10), PatternItem.gap(5)],
-    );
-  }
-
-  Future<BitmapDescriptor> _createBitmapDescriptorFromWidget(
-      Widget widget) async {
-    // For now, use default markers - in a real app you'd render widgets to bitmaps
-    // This is a simplified implementation
-
-    // You can create custom marker icons using BitmapDescriptor.fromAsset()
-    // or use the default markers for now
-    return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange);
-  }
-
-  void _onMarkerTapped(SpaceLocation location) {
-    setState(() {
-      _selectedLocationId = location.id;
-    });
-
-    // Show bottom sheet with location details
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: const Color(0xFF1a1a2e),
-      builder: (context) => _buildLocationDetailsSheet(location),
-    );
-  }
-
-  Widget _buildLocationDetailsSheet(SpaceLocation location) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                _getIconForLocationType(location.type),
-                color: _getColorForLocationType(location.type),
-                size: 32,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      location.name,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      location.description,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildDetailRow('Region', location.region),
-          _buildDetailRow('Status', location.isActive ? 'Active' : 'Inactive'),
-          if (location.details != null)
-            _buildDetailRow('Details', location.details!),
-          if (location.supportedVehicles != null)
-            _buildDetailRow(
-              'Supported Vehicles',
-              location.supportedVehicles!.join(', '),
-            ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _findObservationPoints(location);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF6B35),
-                  ),
-                  child: const Text('Find Viewing Spots'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _showTrajectoryForLocation(location);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2196F3),
-                  ),
-                  child: const Text('Show Trajectory'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$label:',
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getIconForLocationType(LocationType type) {
-    switch (type) {
-      case LocationType.launchSite:
-        return Icons.rocket_launch;
-      case LocationType.landingZone:
-        return Icons.flight_land;
-      case LocationType.droneShip:
-        return Icons.directions_boat;
-      default:
-        return Icons.place;
-    }
-  }
-
-  Color _getColorForLocationType(LocationType type) {
-    switch (type) {
-      case LocationType.launchSite:
-        return const Color(0xFFFF6B35);
-      case LocationType.landingZone:
-        return const Color(0xFF4CAF50);
-      case LocationType.droneShip:
-        return const Color(0xFF2196F3);
-      default:
-        return Colors.grey;
-    }
-  }
-
-  void _findObservationPoints(SpaceLocation location) {
-    final state = context.read<MapBloc>().state;
-    if (state is MapLoaded) {
-      context.read<MapBloc>().add(SearchNearbyObservationPoints(
-            latitude: LocationPermissionService().currentPosition!.latitude,
-            longitude: LocationPermissionService().currentPosition!.longitude,
-            launchSiteId: location.id,
-          ));
-      setState(() {
-        _showObservationPoints = true;
-      });
-    }
-  }
-
-  void _showTrajectoryForLocation(SpaceLocation location) {
-    context.read<MapBloc>().add(ShowTrajectory(location.id));
-    setState(() {
-      _showTrajectory = true;
-    });
-  }
-
-  Widget _buildSearchBar() {
-    return Positioned(
-      top: 20,
-      left: 20,
-      right: 20,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.9),
-          borderRadius: BorderRadius.circular(25),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: TextField(
-          decoration: const InputDecoration(
-            hintText: 'Search places...',
-            border: InputBorder.none,
-            icon: Icon(Icons.search),
-          ),
-          onSubmitted: (query) {
-            context.read<MapBloc>().add(SearchPlaces(query));
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegend() {
-    return Positioned(
-      bottom: 100,
-      left: 20,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.8),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Legend',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            _buildLegendItem(
-                Icons.rocket_launch, 'Launch Sites', const Color(0xFFFF6B35)),
-            _buildLegendItem(
-                Icons.flight_land, 'Landing Zones', const Color(0xFF4CAF50)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(IconData icon, String label, Color color) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLocationButton() {
-    return Positioned(
-      bottom: 40,
-      right: 20,
-      child: FloatingActionButton(
-        onPressed: _getCurrentLocation,
-        backgroundColor: const Color(0xFFFF6B35),
-        child: const Icon(Icons.my_location, color: Colors.white),
-      ),
-    );
-  }
-
-  void _getCurrentLocation() async {
-    try {
-      context.read<MapBloc>().add(const LoadMapData());
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to get location: $e')),
-      );
-    }
-  }
-
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Filter Locations'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CheckboxListTile(
-              title: const Text('Launch Sites'),
-              value: _showLaunchSites,
-              onChanged: (value) {
-                setState(() {
-                  _showLaunchSites = value ?? true;
-                });
-              },
-            ),
-            CheckboxListTile(
-              title: const Text('Landing Zones'),
-              value: _showLandingZones,
-              onChanged: (value) {
-                setState(() {
-                  _showLandingZones = value ?? true;
-                });
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _toggleTrajectory() {
-    if (_showTrajectory) {
-      context.read<MapBloc>().add(const HideTrajectory());
-      setState(() {
-        _showTrajectory = false;
-      });
-    } else {
-      // Show trajectory for Kennedy Space Center as default
-      context.read<MapBloc>().add(const ShowTrajectory('ksc_lc_39a'));
-      setState(() {
-        _showTrajectory = true;
-      });
-    }
-  }
-
-
-    String _getSpaceMapStyle() {
-    // Custom space-themed map style JSON
-    return '''
-    [
-      {
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#1a1a2e"
-          }
-        ]
-      },
-      {
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#8ec3b9"
-          }
-        ]
-      },
-      {
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
-            "color": "#1a1a2e"
-          }
-        ]
-      },
-      {
-        "featureType": "administrative.country",
-        "elementType": "geometry.stroke",
-        "stylers": [
-          {
-            "color": "#4b6cb7"
-          }
-        ]
-      },
-      {
-        "featureType": "administrative.land_parcel",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#64779e"
-          }
-        ]
-      },
-      {
-        "featureType": "administrative.province",
-        "elementType": "geometry.stroke",
-        "stylers": [
-          {
-            "color": "#4b6cb7"
-          }
-        ]
-      },
-      {
-        "featureType": "landscape.man_made",
-        "elementType": "geometry.stroke",
-        "stylers": [
-          {
-            "color": "#334e87"
-          }
-        ]
-      },
-      {
-        "featureType": "landscape.natural",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#023e58"
-          }
-        ]
-      },
-      {
-        "featureType": "poi",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#283d6a"
-          }
-        ]
-      },
-      {
-        "featureType": "poi",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#6f9ba4"
-          }
-        ]
-      },
-      {
-        "featureType": "poi",
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
-            "color": "#1d2c4d"
-          }
-        ]
-      },
-      {
-        "featureType": "poi.park",
-        "elementType": "geometry.fill",
-        "stylers": [
-          {
-            "color": "#023e58"
-          }
-        ]
-      },
-      {
-        "featureType": "poi.park",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#3C7680"
-          }
-        ]
-      },
-      {
-        "featureType": "road",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#304a7d"
-          }
-        ]
-      },
-      {
-        "featureType": "road",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#98a5be"
-          }
-        ]
-      },
-      {
-        "featureType": "road",
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
-            "color": "#1d2c4d"
-          }
-        ]
-      },
-      {
-        "featureType": "road.highway",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#2c6675"
-          }
-        ]
-      },
-      {
-        "featureType": "road.highway",
-        "elementType": "geometry.stroke",
-        "stylers": [
-          {
-            "color": "#255763"
-          }
-        ]
-      },
-      {
-        "featureType": "road.highway",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#b0d5ce"
-          }
-        ]
-      },
-      {
-        "featureType": "road.highway",
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
-            "color": "#023e58"
-          }
-        ]
-      },
-      {
-        "featureType": "transit",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#98a5be"
-          }
-        ]
-      },
-      {
-        "featureType": "transit",
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
-            "color": "#1d2c4d"
-          }
-        ]
-      },
-      {
-        "featureType": "transit.line",
-        "elementType": "geometry.fill",
-        "stylers": [
-          {
-            "color": "#283d6a"
-          }
-        ]
-      },
-      {
-        "featureType": "transit.station",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#3a4762"
-          }
-        ]
-      },
-      {
-        "featureType": "water",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#0e1626"
-          }
-        ]
-      },
-      {
-        "featureType": "water",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#4e6d70"
-          }
-        ]
-      }
-    ]
-    ''';
-  }
-
-}

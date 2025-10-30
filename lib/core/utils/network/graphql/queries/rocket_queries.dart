@@ -128,8 +128,8 @@ const String GET_ROCKET_DETAILS_QUERY = '''
 ''';
 
 const String SEARCH_ROCKETS_QUERY = '''
-  query SearchRockets(\$limit: Int, \$offset: Int) {
-    rockets(limit: \$limit, offset: \$offset) {
+  query SearchRockets {
+    rockets {
       id
       name
       type

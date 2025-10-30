@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:spacex_information_app/core/widgets/error_widget.dart';
 import 'package:spacex_information_app/feature/launch_screen/persentation/view_model/data/launch_event_bloc.dart';
-import 'package:spacex_information_app/feature/company_screen/persentation/views/widgets/build_error_widget.dart';
 import 'package:spacex_information_app/feature/launch_screen/persentation/view_model/data/launch_bloc_state.dart';
 import '../view_model/graphql_launch_models.dart';
 
@@ -14,7 +14,7 @@ class LaunchScreen extends StatefulWidget {
 
 class _LaunchScreenState extends State<LaunchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  bool? _successFilter;
+  bool? _pastFilter;
   bool? _upcomingFilter;
 
   @override
@@ -35,7 +35,6 @@ class _LaunchScreenState extends State<LaunchScreen> {
       body: Column(
         children: [
           _buildFilterSection(),
-          _buildQuickFilters(),
           Expanded(
             child: BlocBuilder<GraphQLLaunchBloc, GraphQLLaunchState>(
               builder: (context, state) {
@@ -44,7 +43,7 @@ class _LaunchScreenState extends State<LaunchScreen> {
                 } else if (state is GraphQLLaunchesLoaded) {
                   return _buildLaunchList(state.launches);
                 } else if (state is GraphQLLaunchError) {
-                  return buildErrorWidget(context, state.message, () {
+                  return buildErrorWidget(state.message, context, () {
                     context
                         .read<GraphQLLaunchBloc>()
                         .add(const FetchLaunches());
@@ -106,13 +105,7 @@ class _LaunchScreenState extends State<LaunchScreen> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    launch.upcoming
-                        ? 'Upcoming'
-                        : launch.success == true
-                            ? 'Success'
-                            : launch.success == false
-                                ? 'Failed'
-                                : 'Unknown',
+                    launch.upcoming == true ? 'Upcoming' : 'Past',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -132,7 +125,7 @@ class _LaunchScreenState extends State<LaunchScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'No Name',
+              launch.missionName,
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -181,7 +174,7 @@ class _LaunchScreenState extends State<LaunchScreen> {
 
   Widget _buildFilterSection() {
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(4.0),
       child: Column(
         children: [
           TextField(
@@ -207,24 +200,14 @@ class _LaunchScreenState extends State<LaunchScreen> {
             children: [
               Expanded(
                 child: FilterChip(
-                  label: const Text('Successful'),
-                  selected: _successFilter == true,
+                  label: const Text('Past'),
+                  selected: _pastFilter == true,
                   onSelected: (selected) {
                     setState(() {
-                      _successFilter = selected ? true : null;
-                    });
-                    _applyFilters();
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FilterChip(
-                  label: const Text('Failed'),
-                  selected: _successFilter == false,
-                  onSelected: (selected) {
-                    setState(() {
-                      _successFilter = selected ? false : null;
+                      _pastFilter = selected ? true : null;
+                      if (selected) {
+                        _upcomingFilter = null;
+                      }
                     });
                     _applyFilters();
                   },
@@ -238,6 +221,9 @@ class _LaunchScreenState extends State<LaunchScreen> {
                   onSelected: (selected) {
                     setState(() {
                       _upcomingFilter = selected ? true : null;
+                      if (selected) {
+                        _pastFilter = null;
+                      }
                     });
                     _applyFilters();
                   },
@@ -248,7 +234,7 @@ class _LaunchScreenState extends State<LaunchScreen> {
                 onPressed: () {
                   _searchController.clear();
                   setState(() {
-                    _successFilter = null;
+                    _pastFilter = null;
                     _upcomingFilter = null;
                   });
                   _applyFilters();
@@ -262,64 +248,12 @@ class _LaunchScreenState extends State<LaunchScreen> {
     );
   }
 
-  Widget _buildQuickFilters() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                context
-                    .read<GraphQLLaunchBloc>()
-                    .add(const FetchUpcomingLaunches());
-                setState(() {
-                  _searchController.clear();
-                  _successFilter = null;
-                  _upcomingFilter = null;
-                });
-              },
-              child: const Text('Upcoming'),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                context
-                    .read<GraphQLLaunchBloc>()
-                    .add(const FetchPastLaunches());
-                setState(() {
-                  _searchController.clear();
-                  _successFilter = null;
-                  _upcomingFilter = null;
-                });
-              },
-              child: const Text('Past'),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () {
-                context.read<GraphQLLaunchBloc>().add(const FetchLaunches());
-                setState(() {
-                  _searchController.clear();
-                  _successFilter = null;
-                  _upcomingFilter = null;
-                });
-              },
-              child: const Text('All'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _applyFilters() {
     context.read<GraphQLLaunchBloc>().add(FilterLaunches(
-          launchSuccess: _successFilter,
+          searchQuery:
+              _searchController.text.isNotEmpty ? _searchController.text : null,
+          showPast: _pastFilter,
+          showUpcoming: _upcomingFilter,
         ));
   }
 }

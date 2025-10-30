@@ -33,7 +33,8 @@ Widget buildGraphQLLaunchDetailsCard(
                 DateFormat('MMMM dd, yyyy')
                     .format(DateTime.parse(launch.staticFireDateUtc!))),
           buildDetailRowWidget('TBD', launch.tbd == true ? 'Yes' : 'No'),
-          buildDetailRowWidget('Upcoming', launch.upcoming ? 'Yes' : 'No'),
+          buildDetailRowWidget(
+              'Upcoming', launch.upcoming == true ? 'Yes' : 'No'),
           if (launch.success != null)
             buildDetailRowWidget(
                 'Launch Success', launch.success! ? 'Yes' : 'No'),

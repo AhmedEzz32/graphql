@@ -13,8 +13,9 @@ class GraphQLLaunch extends Equatable {
   final String? launchDateUtc;
   @JsonKey(name: 'date_local')
   final String? dateLocal;
+  @JsonKey(name: 'launch_success')
   final bool? success;
-  final bool upcoming;
+  final bool? upcoming;
   final String? details;
   @JsonKey(name: 'static_fire_date_utc')
   final String? staticFireDateUtc;
@@ -22,6 +23,7 @@ class GraphQLLaunch extends Equatable {
   final String? tentativeMaxPrecision;
   final bool? tbd;
   final GraphQLLaunchRocket rocket;
+  @JsonKey(name: 'launch_site')
   final GraphQLLaunchpad? launchpad; // Changed from launch_site
   final GraphQLLaunchLinks links;
   @JsonKey(name: 'launch_failure_details')
@@ -113,13 +115,13 @@ class GraphQLLaunchRocket extends Equatable {
 
 @JsonSerializable()
 class GraphQLLaunchpad extends Equatable {
-  final String id;
+  final String? id;
   final String? name;
-  @JsonKey(name: 'full_name')
+  @JsonKey(name: 'site_name_long')
   final String? fullName;
 
   const GraphQLLaunchpad({
-    required this.id,
+    this.id,
     this.name,
     this.fullName,
   });
@@ -138,9 +140,11 @@ class GraphQLLaunchLinks extends Equatable {
   final GraphQLPatch? patch;
   final GraphQLReddit? reddit;
   final GraphQLFlickr? flickr;
+  @JsonKey(name: 'video_link')
   final String? webcast;
   @JsonKey(name: 'youtube_id')
   final String? youtubeId;
+  @JsonKey(name: 'article_link')
   final String? article;
   final String? wikipedia;
 

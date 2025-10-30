@@ -4,7 +4,7 @@ import 'package:spacex_information_app/feature/company_screen/persentation/views
 import 'package:spacex_information_app/feature/company_screen/persentation/views/widgets/build_leader_row_widget.dart';
 import 'package:spacex_information_app/feature/company_screen/persentation/views/widgets/build_metrics_card_widget.dart';
 import 'package:spacex_information_app/feature/company_screen/persentation/views/widgets/build_valuation_card_widget.dart';
-import 'package:spacex_information_app/models/company.dart';
+import 'package:spacex_information_app/feature/company_screen/persentation/view_model/company.dart';
 
 Widget buildCompanyInfoWidget(BuildContext context, Company company) {
   final numberFormat = NumberFormat('#,###');
@@ -128,14 +128,12 @@ Widget buildCompanyInfoWidget(BuildContext context, Company company) {
         ),
         const SizedBox(height: 24),
 
-        buildValuationCardWidget(context, company, numberFormat),
-        const SizedBox(height: 24),
-
         Text(
           'Leadership',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         buildLeaderRowWidget('Founder', company.founder),

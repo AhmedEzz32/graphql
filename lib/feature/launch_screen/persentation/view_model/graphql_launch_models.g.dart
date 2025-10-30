@@ -12,18 +12,18 @@ GraphQLLaunch _$GraphQLLaunchFromJson(Map<String, dynamic> json) =>
       missionName: json['mission_name'] as String,
       launchDateUtc: json['launch_date_utc'] as String?,
       dateLocal: json['date_local'] as String?,
-      success: json['success'] as bool?,
-      upcoming: json['upcoming'] as bool,
+      success: json['launch_success'] as bool?,
+      upcoming: json['upcoming'] as bool?,
       details: json['details'] as String?,
       staticFireDateUtc: json['static_fire_date_utc'] as String?,
       tentativeMaxPrecision: json['tentative_max_precision'] as String?,
       tbd: json['tbd'] as bool?,
       rocket:
           GraphQLLaunchRocket.fromJson(json['rocket'] as Map<String, dynamic>),
-      launchpad: json['launchpad'] == null
+      launchpad: json['launch_site'] == null
           ? null
           : GraphQLLaunchpad.fromJson(
-              json['launchpad'] as Map<String, dynamic>),
+              json['launch_site'] as Map<String, dynamic>),
       links: GraphQLLaunchLinks.fromJson(json['links'] as Map<String, dynamic>),
       launchFailureDetails: json['launch_failure_details'] == null
           ? null
@@ -43,14 +43,14 @@ Map<String, dynamic> _$GraphQLLaunchToJson(GraphQLLaunch instance) =>
       'mission_name': instance.missionName,
       'launch_date_utc': instance.launchDateUtc,
       'date_local': instance.dateLocal,
-      'success': instance.success,
+      'launch_success': instance.success,
       'upcoming': instance.upcoming,
       'details': instance.details,
       'static_fire_date_utc': instance.staticFireDateUtc,
       'tentative_max_precision': instance.tentativeMaxPrecision,
       'tbd': instance.tbd,
       'rocket': instance.rocket,
-      'launchpad': instance.launchpad,
+      'launch_site': instance.launchpad,
       'links': instance.links,
       'launch_failure_details': instance.launchFailureDetails,
       'timeline': instance.timeline,
@@ -90,16 +90,16 @@ Map<String, dynamic> _$GraphQLLaunchRocketToJson(
 
 GraphQLLaunchpad _$GraphQLLaunchpadFromJson(Map<String, dynamic> json) =>
     GraphQLLaunchpad(
-      id: json['id'] as String,
+      id: json['id'] as String?,
       name: json['name'] as String?,
-      fullName: json['full_name'] as String?,
+      fullName: json['site_name_long'] as String?,
     );
 
 Map<String, dynamic> _$GraphQLLaunchpadToJson(GraphQLLaunchpad instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
-      'full_name': instance.fullName,
+      'site_name_long': instance.fullName,
     };
 
 GraphQLLaunchLinks _$GraphQLLaunchLinksFromJson(Map<String, dynamic> json) =>
@@ -113,9 +113,9 @@ GraphQLLaunchLinks _$GraphQLLaunchLinksFromJson(Map<String, dynamic> json) =>
       flickr: json['flickr'] == null
           ? null
           : GraphQLFlickr.fromJson(json['flickr'] as Map<String, dynamic>),
-      webcast: json['webcast'] as String?,
+      webcast: json['video_link'] as String?,
       youtubeId: json['youtube_id'] as String?,
-      article: json['article'] as String?,
+      article: json['article_link'] as String?,
       wikipedia: json['wikipedia'] as String?,
     );
 
@@ -124,9 +124,9 @@ Map<String, dynamic> _$GraphQLLaunchLinksToJson(GraphQLLaunchLinks instance) =>
       'patch': instance.patch,
       'reddit': instance.reddit,
       'flickr': instance.flickr,
-      'webcast': instance.webcast,
+      'video_link': instance.webcast,
       'youtube_id': instance.youtubeId,
-      'article': instance.article,
+      'article_link': instance.article,
       'wikipedia': instance.wikipedia,
     };
 

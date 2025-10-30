@@ -61,17 +61,19 @@ class FetchLaunchDetails extends GraphQLLaunchEvent {
 
 class FilterLaunches extends GraphQLLaunchEvent {
   final String? rocketName;
-  final String? launchYear;
-  final bool? launchSuccess;
+  final String? searchQuery;
+  final bool? showPast;
+  final bool? showUpcoming;
 
   const FilterLaunches({
     this.rocketName,
-    this.launchYear,
-    this.launchSuccess,
+    this.searchQuery,
+    this.showPast,
+    this.showUpcoming,
   });
 
   @override
-  List<Object?> get props => [rocketName, launchYear, launchSuccess];
+  List<Object?> get props => [rocketName, searchQuery, showPast, showUpcoming];
 }
 
 class RefreshLaunches extends GraphQLLaunchEvent {

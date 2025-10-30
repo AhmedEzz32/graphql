@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'package:spacex_information_app/core/widgets/error_widget.dart';
 import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/data/rocket_event_bloc.dart';
 import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/data/rocket_bloc_state.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../views_model/graphql_rocket_models.dart';
 
 class RocketDetailsScreen extends StatefulWidget {
@@ -37,7 +37,11 @@ class _RocketDetailsScreenState extends State<RocketDetailsScreen> {
           } else if (state is GraphQLRocketDetailsLoaded) {
             return _buildRocketDetails(state.rocket);
           } else if (state is GraphQLRocketError) {
-            return _buildErrorWidget(state.message);
+            return buildErrorWidget(state.message, context, () {
+              context
+                  .read<GraphQLRocketBloc>()
+                  .add(FetchRocketDetails(widget.rocketId));
+            });
           }
           return const Center(child: Text('Rocket details not available'));
         },
@@ -250,46 +254,5 @@ class _RocketDetailsScreenState extends State<RocketDetailsScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildErrorWidget(String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Error',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              context
-                  .read<GraphQLRocketBloc>()
-                  .add(FetchRocketDetails(widget.rocketId));
-            },
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _launchUrl(String url) async {
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
-    }
   }
 }

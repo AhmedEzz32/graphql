@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'package:spacex_information_app/core/widgets/error_widget.dart';
 import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/data/rocket_event_bloc.dart';
 import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/data/rocket_bloc_state.dart';
 import '../views_model/graphql_rocket_models.dart';
@@ -44,7 +44,9 @@ class _RocketScreenState extends State<RocketScreen> {
                 } else if (state is GraphQLRocketsLoaded) {
                   return _buildRocketList(state.rockets);
                 } else if (state is GraphQLRocketError) {
-                  return _buildErrorWidget(state.message);
+                  return buildErrorWidget(state.message, context, () {
+                    context.read<GraphQLRocketBloc>().add(const FetchRockets());
+                  });
                 }
                 return const Center(child: Text('Welcome to SpaceX Rockets!'));
               },
@@ -91,7 +93,7 @@ class _RocketScreenState extends State<RocketScreen> {
                 child: FilterChip(
                   label: const Text('Active Only'),
                   selected: _activeFilter == true,
-                  selectedColor: Colors.green.withOpacity(0.2),
+                  selectedColor: Colors.green.withValues(alpha: 0.2),
                   checkmarkColor: Colors.green,
                   onSelected: (selected) {
                     setState(() {
@@ -106,7 +108,7 @@ class _RocketScreenState extends State<RocketScreen> {
                 child: FilterChip(
                   label: const Text('Inactive Only'),
                   selected: _activeFilter == false,
-                  selectedColor: Colors.red.withOpacity(0.2),
+                  selectedColor: Colors.red.withValues(alpha: 0.2),
                   checkmarkColor: Colors.red,
                   onSelected: (selected) {
                     setState(() {
@@ -135,40 +137,29 @@ class _RocketScreenState extends State<RocketScreen> {
   }
 
   void _applyFilters() {
-    final searchQuery = _searchController.text.trim();
-    if (searchQuery.isNotEmpty) {
-      context.read<GraphQLRocketBloc>().add(SearchRockets(searchQuery));
-    } else {
-      context.read<GraphQLRocketBloc>().add(const FetchRockets());
-    }
-  }
-
-  List<GraphQLRocket> _applyActiveFilter(List<GraphQLRocket> rockets) {
-    if (_activeFilter == null) {
-      return rockets;
-    }
-    return rockets.where((rocket) => rocket.active == _activeFilter).toList();
+    context.read<GraphQLRocketBloc>().add(FilterRockets(
+          searchQuery:
+              _searchController.text.isNotEmpty ? _searchController.text : null,
+          showActive: _activeFilter == true ? true : null,
+          showInactive: _activeFilter == false ? true : null,
+        ));
   }
 
   Widget _buildRocketList(List<GraphQLRocket> rockets) {
-    final filteredRockets = _applyActiveFilter(rockets);
-
-    if (filteredRockets.isEmpty) {
-      return Center(
+    if (rockets.isEmpty) {
+      return const Center(
         child: Text(
-          _activeFilter == null
-              ? 'No Rocket found'
-              : 'No ${_activeFilter! ? 'Active' : 'Inactive'} rockets found',
-          style: const TextStyle(fontSize: 18),
+          'No rockets found',
+          style: TextStyle(fontSize: 18),
         ),
       );
     }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: filteredRockets.length,
+      itemCount: rockets.length,
       itemBuilder: (context, index) {
-        final rocket = filteredRockets[index];
+        final rocket = rockets[index];
         return _buildRocketCard(rocket);
       },
     );
@@ -237,27 +228,6 @@ class _RocketScreenState extends State<RocketScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              if (rocket.country.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(
-                    imageUrl: rocket.country[0],
-                    height: 200,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      height: 200,
-                      color: Colors.grey[300],
-                      child: const Center(child: CircularProgressIndicator()),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 200,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.error),
-                    ),
-                  ),
-                ),
               const SizedBox(height: 12),
               Text(
                 rocket.description,
@@ -336,39 +306,6 @@ class _RocketScreenState extends State<RocketScreen> {
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorWidget(String message) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Error',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              context.read<GraphQLRocketBloc>().add(const FetchRockets());
-            },
-            child: const Text('Retry'),
           ),
         ],
       ),

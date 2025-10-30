@@ -38,6 +38,21 @@ class SearchRockets extends GraphQLRocketEvent {
   List<Object?> get props => [searchTerm];
 }
 
+class FilterRockets extends GraphQLRocketEvent {
+  final String? searchQuery;
+  final bool? showActive;
+  final bool? showInactive;
+
+  const FilterRockets({
+    this.searchQuery,
+    this.showActive,
+    this.showInactive,
+  });
+
+  @override
+  List<Object?> get props => [searchQuery, showActive, showInactive];
+}
+
 class RefreshRockets extends GraphQLRocketEvent {
   const RefreshRockets();
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:spacex_information_app/feature/launch_screen/persentation/view/launch_screen.dart';
 import '../../../rocket_screen/persentation/views/rocket_screen.dart';
-import '../../../launch_screen/persentation/view/launch_screen.dart';
-import '../../../mission_screen/persentation/views/mission_screen.dart';
 import '../../../company_screen/persentation/views/company_screen_view.dart';
 import '../../../map_screen/presentation/views/space_map_screen.dart';
 
@@ -18,7 +17,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = [
     const RocketScreen(),
     const LaunchScreen(),
-    const MissionScreen(),
     const CompanyScreen(),
     const SpaceMapScreen(),
   ];
@@ -26,7 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<String> _titles = [
     'Rockets',
     'Launches',
-    'Missions',
     'Company',
     'Map',
   ];
@@ -61,10 +58,6 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.flight_takeoff),
             label: 'Launches',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.satellite),
-            label: 'Missions',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.business),

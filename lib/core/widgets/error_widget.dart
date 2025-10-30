@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 Widget buildErrorWidget(
-    BuildContext context, String message, VoidCallback onPressed) {
+    String message, BuildContext context, VoidCallback onPressed) {
   return Center(
     child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -24,7 +24,7 @@ Widget buildErrorWidget(
         ),
         const SizedBox(height: 16),
         ElevatedButton(
-          onPressed: () => onPressed,
+          onPressed: onPressed,
           child: const Text('Retry'),
         ),
       ],
