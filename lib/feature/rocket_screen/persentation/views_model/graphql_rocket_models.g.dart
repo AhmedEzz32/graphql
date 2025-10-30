@@ -20,7 +20,6 @@ GraphQLRocket _$GraphQLRocketFromJson(Map<String, dynamic> json) =>
       country: json['country'] as String,
       company: json['company'] as String,
       description: json['description'] as String,
-      wikipedia: json['wikipedia'] as String,
       height:
           GraphQLRocketHeight.fromJson(json['height'] as Map<String, dynamic>),
       diameter: GraphQLRocketDiameter.fromJson(
@@ -61,7 +60,6 @@ Map<String, dynamic> _$GraphQLRocketToJson(GraphQLRocket instance) =>
       'country': instance.country,
       'company': instance.company,
       'description': instance.description,
-      'wikipedia': instance.wikipedia,
       'height': instance.height,
       'diameter': instance.diameter,
       'mass': instance.mass,

@@ -1,7 +1,17 @@
 import 'package:geolocator/geolocator.dart';
 
 class LocationPermissionService {
-  static Future<bool> requestLocationPermission() async {
+  
+  Position? currentPosition;
+
+  Future initialize() async {
+    bool isPermissionGranted = await requestLocationPermission();
+    if (isPermissionGranted) {
+      currentPosition = await getCurrentLocation();
+    }
+  }
+
+  Future<bool> requestLocationPermission() async {
     try {
       // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -29,7 +39,7 @@ class LocationPermissionService {
     }
   }
 
-  static Future<Position?> getCurrentLocation() async {
+  Future<Position?> getCurrentLocation() async {
     try {
       bool hasPermission = await requestLocationPermission();
       if (!hasPermission) {
@@ -51,4 +61,9 @@ class LocationPermissionService {
       return false;
     }
   }
+
+  //// singleton pattern
+  static final LocationPermissionService _instance = LocationPermissionService._internal();
+  factory LocationPermissionService() => _instance;
+  LocationPermissionService._internal();
 }

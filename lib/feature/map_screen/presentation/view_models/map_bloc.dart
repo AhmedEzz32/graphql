@@ -1,6 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:spacex_information_app/core/utils/network/graphql/config/graphql_config.dart';
+import 'package:spacex_information_app/core/utils/network/graphql/queries/landpad_queries.dart';
+import 'package:spacex_information_app/core/utils/network/graphql/queries/launches_queries.dart';
+import 'package:spacex_information_app/feature/launch_screen/persentation/view_model/graphql_launch_models.dart';
+import 'package:spacex_information_app/feature/map_screen/data/landpad_model.dart';
+import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/graphql_rocket_models.dart';
 import '../../data/mock_space_data_service.dart';
 import '../../data/models/space_location.dart';
 import 'map_event.dart';
@@ -9,7 +14,6 @@ import 'map_state.dart';
 class MapBloc extends Bloc<MapEvent, MapState> {
   MapBloc() : super(const MapInitial()) {
     on<LoadMapData>(_onLoadMapData);
-    on<FilterLocationsByType>(_onFilterLocationsByType);
     on<ShowTrajectory>(_onShowTrajectory);
     on<HideTrajectory>(_onHideTrajectory);
     on<SearchNearbyObservationPoints>(_onSearchNearbyObservationPoints);
@@ -22,53 +26,67 @@ class MapBloc extends Bloc<MapEvent, MapState> {
     try {
       emit(const MapLoading());
 
-      final locations = MockSpaceDataService.getAllLocations();
+      final client = GraphQLConfig.clientInstance;
+      /// TODO: Modify queries to fetch launching locations, landing zones, and rockets separately
+      final QueryOptions launchingOptions = QueryOptions(
+        document: gql(GET_UPCOMING_LAUNCHES_QUERY),
+        variables: {
+          'limit': event.limit,
+          'offset': event.offset,
+        },
+        fetchPolicy: FetchPolicy.cacheFirst,
+      );
+      final QueryOptions landingOptions = QueryOptions(
+        document: gql(GET_LANDPADS_QUERY),
+        variables: {
+          'limit': event.limit,
+          'offset': event.offset,
+        },
+        fetchPolicy: FetchPolicy.cacheFirst,
+      );
+      final QueryOptions rocketsOptions = QueryOptions(
+        document: gql(GET_ROCKETS_QUERY),
+        variables: {
+          'limit': event.limit,
+          'offset': event.offset,
+        },
+        fetchPolicy: FetchPolicy.cacheFirst,
+      );
 
-      final mapStyle = _getSpaceMapStyle();
+      final List<QueryResult> result = await Future.wait<QueryResult>([
+        client.query(launchingOptions), /// for launching locations
+        client.query(landingOptions), /// for landing zones
+        client.query(rocketsOptions), /// for rockets
+      ]);
 
-      double? userLat;
-      double? userLng;
-
-      try {
-        final permission = await Permission.location.request();
-        if (permission.isGranted) {
-          final position = await Geolocator.getCurrentPosition();
-          userLat = position.latitude;
-          userLng = position.longitude;
-        }
-      } catch (e) {
-        e.toString();
+      if (result.any((result) => result.hasException)) {
+        final exception = result
+            .firstWhere((result) => result.hasException)
+            .exception!;
+        emit(MapError(
+            'Error loading map data: ${_getErrorMessage(exception)}'));
+        return;
       }
 
+      final List<dynamic> launchData = result[0].data?['launchesUpcoming'] ?? [];
+      final List<GraphQLLaunch> launches =
+          launchData.map((json) => GraphQLLaunch.fromJson(json)).toList();
+
+      final List<dynamic> landingData = result[1].data?['landpads'] ?? [];
+      final List<LandpadModel> locations =
+          landingData.map((json) => LandpadModel.fromJson(json)).toList();
+      
+      final List<dynamic> rocketData = result[2].data?['rockets'] ?? [];
+      final List<GraphQLRocket> rockets =
+          rocketData.map((json) => GraphQLRocket.fromJson(json)).toList();
+
       emit(MapLoaded(
-        allLocations: locations,
-        filteredLocations: locations,
-        mapStyle: mapStyle,
-        userLatitude: userLat,
-        userLongitude: userLng,
+        launchLocations: launches,
+        landingZones: locations,
+        rockets: rockets,
       ));
     } catch (e) {
       emit(MapError('Failed to load map data: ${e.toString()}'));
-    }
-  }
-
-  Future<void> _onFilterLocationsByType(
-    FilterLocationsByType event,
-    Emitter<MapState> emit,
-  ) async {
-    if (state is MapLoaded) {
-      final currentState = state as MapLoaded;
-
-      List<SpaceLocation> filtered;
-      if (event.selectedTypes.isEmpty) {
-        filtered = currentState.allLocations;
-      } else {
-        filtered = currentState.allLocations.where((location) {
-          return event.selectedTypes.contains(location.type.name);
-        }).toList();
-      }
-
-      emit(currentState.copyWith(filteredLocations: filtered));
     }
   }
 
@@ -165,242 +183,18 @@ class MapBloc extends Bloc<MapEvent, MapState> {
     }
   }
 
-  String _getSpaceMapStyle() {
-    // Custom space-themed map style JSON
-    return '''
-    [
-      {
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#1a1a2e"
-          }
-        ]
-      },
-      {
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#8ec3b9"
-          }
-        ]
-      },
-      {
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
-            "color": "#1a1a2e"
-          }
-        ]
-      },
-      {
-        "featureType": "administrative.country",
-        "elementType": "geometry.stroke",
-        "stylers": [
-          {
-            "color": "#4b6cb7"
-          }
-        ]
-      },
-      {
-        "featureType": "administrative.land_parcel",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#64779e"
-          }
-        ]
-      },
-      {
-        "featureType": "administrative.province",
-        "elementType": "geometry.stroke",
-        "stylers": [
-          {
-            "color": "#4b6cb7"
-          }
-        ]
-      },
-      {
-        "featureType": "landscape.man_made",
-        "elementType": "geometry.stroke",
-        "stylers": [
-          {
-            "color": "#334e87"
-          }
-        ]
-      },
-      {
-        "featureType": "landscape.natural",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#023e58"
-          }
-        ]
-      },
-      {
-        "featureType": "poi",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#283d6a"
-          }
-        ]
-      },
-      {
-        "featureType": "poi",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#6f9ba4"
-          }
-        ]
-      },
-      {
-        "featureType": "poi",
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
-            "color": "#1d2c4d"
-          }
-        ]
-      },
-      {
-        "featureType": "poi.park",
-        "elementType": "geometry.fill",
-        "stylers": [
-          {
-            "color": "#023e58"
-          }
-        ]
-      },
-      {
-        "featureType": "poi.park",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#3C7680"
-          }
-        ]
-      },
-      {
-        "featureType": "road",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#304a7d"
-          }
-        ]
-      },
-      {
-        "featureType": "road",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#98a5be"
-          }
-        ]
-      },
-      {
-        "featureType": "road",
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
-            "color": "#1d2c4d"
-          }
-        ]
-      },
-      {
-        "featureType": "road.highway",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#2c6675"
-          }
-        ]
-      },
-      {
-        "featureType": "road.highway",
-        "elementType": "geometry.stroke",
-        "stylers": [
-          {
-            "color": "#255763"
-          }
-        ]
-      },
-      {
-        "featureType": "road.highway",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#b0d5ce"
-          }
-        ]
-      },
-      {
-        "featureType": "road.highway",
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
-            "color": "#023e58"
-          }
-        ]
-      },
-      {
-        "featureType": "transit",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#98a5be"
-          }
-        ]
-      },
-      {
-        "featureType": "transit",
-        "elementType": "labels.text.stroke",
-        "stylers": [
-          {
-            "color": "#1d2c4d"
-          }
-        ]
-      },
-      {
-        "featureType": "transit.line",
-        "elementType": "geometry.fill",
-        "stylers": [
-          {
-            "color": "#283d6a"
-          }
-        ]
-      },
-      {
-        "featureType": "transit.station",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#3a4762"
-          }
-        ]
-      },
-      {
-        "featureType": "water",
-        "elementType": "geometry",
-        "stylers": [
-          {
-            "color": "#0e1626"
-          }
-        ]
-      },
-      {
-        "featureType": "water",
-        "elementType": "labels.text.fill",
-        "stylers": [
-          {
-            "color": "#4e6d70"
-          }
-        ]
+  String _getErrorMessage(OperationException exception) {
+    if (exception.graphqlErrors.isNotEmpty) {
+      return exception.graphqlErrors.first.message;
+    }
+    if (exception.linkException != null) {
+      if (exception.linkException is NetworkException) {
+        return 'Network error. Please check your internet connection.';
       }
-    ]
-    ''';
+      if (exception.linkException is ServerException) {
+        return 'Server error. Please try again later.';
+      }
+    }
+    return 'An unexpected error occurred.';
   }
 }

@@ -172,25 +172,6 @@ class _RocketDetailsScreenState extends State<RocketDetailsScreen> {
           const SizedBox(height: 12),
           _buildDetailsCard(rocket),
           const SizedBox(height: 24),
-
-          // Links
-          if (rocket.wikipedia.isNotEmpty) ...[
-            Text(
-              'Learn More',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton.icon(
-              onPressed: () => _launchUrl(rocket.wikipedia),
-              icon: const Icon(Icons.language),
-              label: const Text('Wikipedia'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-              ),
-            ),
-          ],
         ],
       ),
     );

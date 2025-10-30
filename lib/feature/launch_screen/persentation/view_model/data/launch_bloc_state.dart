@@ -163,7 +163,7 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
 
       if (result.hasException) {
         emit(GraphQLLaunchError(
-          message: _getErrorMessage(result.exception!),
+          message: GraphQLErrorHandler.handleError(result.exception!),
           isNetworkError: _isNetworkError(result.exception!),
         ));
         return;
@@ -216,7 +216,7 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
 
       if (result.hasException) {
         emit(GraphQLLaunchError(
-          message: _getErrorMessage(result.exception!),
+          message: GraphQLErrorHandler.handleError(result.exception!),
           isNetworkError: _isNetworkError(result.exception!),
         ));
         return;
@@ -264,7 +264,7 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
 
       if (result.hasException) {
         emit(GraphQLLaunchError(
-          message: _getErrorMessage(result.exception!),
+          message: GraphQLErrorHandler.handleError(result.exception!),
           isNetworkError: _isNetworkError(result.exception!),
         ));
         return;
@@ -316,7 +316,7 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
 
       if (result.hasException) {
         emit(GraphQLLaunchError(
-          message: _getErrorMessage(result.exception!),
+          message: GraphQLErrorHandler.handleError(result.exception!),
           isNetworkError: _isNetworkError(result.exception!),
         ));
         return;
@@ -359,7 +359,7 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
 
       if (result.hasException) {
         emit(GraphQLLaunchError(
-          message: _getErrorMessage(result.exception!),
+          message: GraphQLErrorHandler.handleError(result.exception!),
           isNetworkError: _isNetworkError(result.exception!),
         ));
         return;
@@ -377,21 +377,6 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
     } catch (e) {
       emit(GraphQLLaunchError(message: 'An unexpected error occurred: $e'));
     }
-  }
-
-  String _getErrorMessage(OperationException exception) {
-    if (exception.graphqlErrors.isNotEmpty) {
-      return exception.graphqlErrors.first.message;
-    }
-    if (exception.linkException != null) {
-      if (exception.linkException is NetworkException) {
-        return 'Network error. Please check your internet connection.';
-      }
-      if (exception.linkException is ServerException) {
-        return 'Server error. Please try again later.';
-      }
-    }
-    return 'An unexpected error occurred.';
   }
 
   bool _isNetworkError(OperationException exception) {

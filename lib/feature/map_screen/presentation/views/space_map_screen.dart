@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:spacex_information_app/core/services/location_permission_service.dart';
 import 'dart:async';
 import '../../data/models/space_location.dart';
 import '../view_models/map_bloc.dart';
@@ -24,7 +25,6 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
   // Filter options
   bool _showLaunchSites = true;
   bool _showLandingZones = true;
-  bool _showDroneShips = true;
   bool _showObservationPoints = false;
 
   @override
@@ -54,7 +54,7 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
       body: BlocListener<MapBloc, MapState>(
         listener: (context, state) {
           if (state is MapLoaded) {
-            _updateMarkersAndPolylines(state);
+            // _updateMarkersAndPolylines(state);
           }
         },
         child: BlocBuilder<MapBloc, MapState>(
@@ -107,7 +107,7 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
                     markers: _markers,
                     polylines: _polylines,
                     mapType: MapType.normal,
-                    style: state.mapStyle.isNotEmpty ? state.mapStyle : null,
+                    style: _getSpaceMapStyle(),
                     myLocationEnabled: true,
                     myLocationButtonEnabled: false,
                     zoomControlsEnabled: false,
@@ -128,7 +128,7 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
 
   void _onMapCreated(GoogleMapController controller) {}
 
-  Future<void> _updateMarkersAndPolylines(MapLoaded state) async {
+  /* Future<void> _updateMarkersAndPolylines(MapLoaded state) async {
     final markers = <Marker>{};
     final polylines = <Polyline>{};
 
@@ -183,7 +183,7 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
       _polylines.clear();
       _polylines.addAll(polylines);
     });
-  }
+  } */
 
   bool _shouldShowLocation(SpaceLocation location) {
     switch (location.type) {
@@ -191,8 +191,6 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
         return _showLaunchSites;
       case LocationType.landingZone:
         return _showLandingZones;
-      case LocationType.droneShip:
-        return _showDroneShips;
       default:
         return true;
     }
@@ -489,12 +487,10 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
 
   void _findObservationPoints(SpaceLocation location) {
     final state = context.read<MapBloc>().state;
-    if (state is MapLoaded &&
-        state.userLatitude != null &&
-        state.userLongitude != null) {
+    if (state is MapLoaded) {
       context.read<MapBloc>().add(SearchNearbyObservationPoints(
-            latitude: state.userLatitude!,
-            longitude: state.userLongitude!,
+            latitude: LocationPermissionService().currentPosition!.latitude,
+            longitude: LocationPermissionService().currentPosition!.longitude,
             launchSiteId: location.id,
           ));
       setState(() {
@@ -568,11 +564,6 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
                 Icons.rocket_launch, 'Launch Sites', const Color(0xFFFF6B35)),
             _buildLegendItem(
                 Icons.flight_land, 'Landing Zones', const Color(0xFF4CAF50)),
-            _buildLegendItem(
-                Icons.directions_boat, 'Drone Ships', const Color(0xFF2196F3)),
-            if (_showObservationPoints)
-              _buildLegendItem(
-                  Icons.visibility, 'Viewing Spots', const Color(0xFFFFD700)),
           ],
         ),
       ),
@@ -636,7 +627,6 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
                 setState(() {
                   _showLaunchSites = value ?? true;
                 });
-                _updateFilters();
               },
             ),
             CheckboxListTile(
@@ -646,27 +636,6 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
                 setState(() {
                   _showLandingZones = value ?? true;
                 });
-                _updateFilters();
-              },
-            ),
-            CheckboxListTile(
-              title: const Text('Drone Ships'),
-              value: _showDroneShips,
-              onChanged: (value) {
-                setState(() {
-                  _showDroneShips = value ?? true;
-                });
-                _updateFilters();
-              },
-            ),
-            CheckboxListTile(
-              title: const Text('Viewing Spots'),
-              value: _showObservationPoints,
-              onChanged: (value) {
-                setState(() {
-                  _showObservationPoints = value ?? false;
-                });
-                _updateFilters();
               },
             ),
           ],
@@ -679,15 +648,6 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
         ],
       ),
     );
-  }
-
-  void _updateFilters() {
-    final selectedTypes = <String>[];
-    if (_showLaunchSites) selectedTypes.add('launchSite');
-    if (_showLandingZones) selectedTypes.add('landingZone');
-    if (_showDroneShips) selectedTypes.add('droneShip');
-
-    context.read<MapBloc>().add(FilterLocationsByType(selectedTypes));
   }
 
   void _toggleTrajectory() {
@@ -704,4 +664,245 @@ class _SpaceMapScreenState extends State<SpaceMapScreen> {
       });
     }
   }
+
+
+    String _getSpaceMapStyle() {
+    // Custom space-themed map style JSON
+    return '''
+    [
+      {
+        "elementType": "geometry",
+        "stylers": [
+          {
+            "color": "#1a1a2e"
+          }
+        ]
+      },
+      {
+        "elementType": "labels.text.fill",
+        "stylers": [
+          {
+            "color": "#8ec3b9"
+          }
+        ]
+      },
+      {
+        "elementType": "labels.text.stroke",
+        "stylers": [
+          {
+            "color": "#1a1a2e"
+          }
+        ]
+      },
+      {
+        "featureType": "administrative.country",
+        "elementType": "geometry.stroke",
+        "stylers": [
+          {
+            "color": "#4b6cb7"
+          }
+        ]
+      },
+      {
+        "featureType": "administrative.land_parcel",
+        "elementType": "labels.text.fill",
+        "stylers": [
+          {
+            "color": "#64779e"
+          }
+        ]
+      },
+      {
+        "featureType": "administrative.province",
+        "elementType": "geometry.stroke",
+        "stylers": [
+          {
+            "color": "#4b6cb7"
+          }
+        ]
+      },
+      {
+        "featureType": "landscape.man_made",
+        "elementType": "geometry.stroke",
+        "stylers": [
+          {
+            "color": "#334e87"
+          }
+        ]
+      },
+      {
+        "featureType": "landscape.natural",
+        "elementType": "geometry",
+        "stylers": [
+          {
+            "color": "#023e58"
+          }
+        ]
+      },
+      {
+        "featureType": "poi",
+        "elementType": "geometry",
+        "stylers": [
+          {
+            "color": "#283d6a"
+          }
+        ]
+      },
+      {
+        "featureType": "poi",
+        "elementType": "labels.text.fill",
+        "stylers": [
+          {
+            "color": "#6f9ba4"
+          }
+        ]
+      },
+      {
+        "featureType": "poi",
+        "elementType": "labels.text.stroke",
+        "stylers": [
+          {
+            "color": "#1d2c4d"
+          }
+        ]
+      },
+      {
+        "featureType": "poi.park",
+        "elementType": "geometry.fill",
+        "stylers": [
+          {
+            "color": "#023e58"
+          }
+        ]
+      },
+      {
+        "featureType": "poi.park",
+        "elementType": "labels.text.fill",
+        "stylers": [
+          {
+            "color": "#3C7680"
+          }
+        ]
+      },
+      {
+        "featureType": "road",
+        "elementType": "geometry",
+        "stylers": [
+          {
+            "color": "#304a7d"
+          }
+        ]
+      },
+      {
+        "featureType": "road",
+        "elementType": "labels.text.fill",
+        "stylers": [
+          {
+            "color": "#98a5be"
+          }
+        ]
+      },
+      {
+        "featureType": "road",
+        "elementType": "labels.text.stroke",
+        "stylers": [
+          {
+            "color": "#1d2c4d"
+          }
+        ]
+      },
+      {
+        "featureType": "road.highway",
+        "elementType": "geometry",
+        "stylers": [
+          {
+            "color": "#2c6675"
+          }
+        ]
+      },
+      {
+        "featureType": "road.highway",
+        "elementType": "geometry.stroke",
+        "stylers": [
+          {
+            "color": "#255763"
+          }
+        ]
+      },
+      {
+        "featureType": "road.highway",
+        "elementType": "labels.text.fill",
+        "stylers": [
+          {
+            "color": "#b0d5ce"
+          }
+        ]
+      },
+      {
+        "featureType": "road.highway",
+        "elementType": "labels.text.stroke",
+        "stylers": [
+          {
+            "color": "#023e58"
+          }
+        ]
+      },
+      {
+        "featureType": "transit",
+        "elementType": "labels.text.fill",
+        "stylers": [
+          {
+            "color": "#98a5be"
+          }
+        ]
+      },
+      {
+        "featureType": "transit",
+        "elementType": "labels.text.stroke",
+        "stylers": [
+          {
+            "color": "#1d2c4d"
+          }
+        ]
+      },
+      {
+        "featureType": "transit.line",
+        "elementType": "geometry.fill",
+        "stylers": [
+          {
+            "color": "#283d6a"
+          }
+        ]
+      },
+      {
+        "featureType": "transit.station",
+        "elementType": "geometry",
+        "stylers": [
+          {
+            "color": "#3a4762"
+          }
+        ]
+      },
+      {
+        "featureType": "water",
+        "elementType": "geometry",
+        "stylers": [
+          {
+            "color": "#0e1626"
+          }
+        ]
+      },
+      {
+        "featureType": "water",
+        "elementType": "labels.text.fill",
+        "stylers": [
+          {
+            "color": "#4e6d70"
+          }
+        ]
+      }
+    ]
+    ''';
+  }
+
 }

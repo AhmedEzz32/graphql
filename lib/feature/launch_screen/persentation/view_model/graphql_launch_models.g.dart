@@ -9,13 +9,12 @@ part of 'graphql_launch_models.dart';
 GraphQLLaunch _$GraphQLLaunchFromJson(Map<String, dynamic> json) =>
     GraphQLLaunch(
       id: json['id'] as String,
-      name: json['name'] as String?,
-      dateUtc: json['date_utc'] as String?,
+      missionName: json['mission_name'] as String,
+      launchDateUtc: json['launch_date_utc'] as String?,
       dateLocal: json['date_local'] as String?,
       success: json['success'] as bool?,
       upcoming: json['upcoming'] as bool,
       details: json['details'] as String?,
-      flightNumber: (json['flight_number'] as num).toInt(),
       staticFireDateUtc: json['static_fire_date_utc'] as String?,
       tentativeMaxPrecision: json['tentative_max_precision'] as String?,
       tbd: json['tbd'] as bool?,
@@ -41,13 +40,12 @@ GraphQLLaunch _$GraphQLLaunchFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$GraphQLLaunchToJson(GraphQLLaunch instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'name': instance.name,
-      'date_utc': instance.dateUtc,
+      'mission_name': instance.missionName,
+      'launch_date_utc': instance.launchDateUtc,
       'date_local': instance.dateLocal,
       'success': instance.success,
       'upcoming': instance.upcoming,
       'details': instance.details,
-      'flight_number': instance.flightNumber,
       'static_fire_date_utc': instance.staticFireDateUtc,
       'tentative_max_precision': instance.tentativeMaxPrecision,
       'tbd': instance.tbd,
@@ -61,9 +59,8 @@ Map<String, dynamic> _$GraphQLLaunchToJson(GraphQLLaunch instance) =>
 
 GraphQLLaunchRocket _$GraphQLLaunchRocketFromJson(Map<String, dynamic> json) =>
     GraphQLLaunchRocket(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      type: json['type'] as String,
+      name: json['rocket_name'] as String,
+      type: json['rocket_type'] as String,
       firstStage: json['first_stage'] == null
           ? null
           : GraphQLLaunchFirstStage.fromJson(
@@ -75,17 +72,20 @@ GraphQLLaunchRocket _$GraphQLLaunchRocketFromJson(Map<String, dynamic> json) =>
       fairings: json['fairings'] == null
           ? null
           : GraphQLFairings.fromJson(json['fairings'] as Map<String, dynamic>),
+      rocket: json['rocket'] == null
+          ? null
+          : GraphQLRocket.fromJson(json['rocket'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$GraphQLLaunchRocketToJson(
         GraphQLLaunchRocket instance) =>
     <String, dynamic>{
-      'id': instance.id,
-      'name': instance.name,
-      'type': instance.type,
+      'rocket_name': instance.name,
+      'rocket_type': instance.type,
       'first_stage': instance.firstStage,
       'second_stage': instance.secondStage,
       'fairings': instance.fairings,
+      'rocket': instance.rocket,
     };
 
 GraphQLLaunchpad _$GraphQLLaunchpadFromJson(Map<String, dynamic> json) =>

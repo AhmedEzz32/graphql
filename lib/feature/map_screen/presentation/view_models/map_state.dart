@@ -1,4 +1,7 @@
 import 'package:equatable/equatable.dart';
+import 'package:spacex_information_app/feature/launch_screen/persentation/view_model/graphql_launch_models.dart';
+import 'package:spacex_information_app/feature/map_screen/data/landpad_model.dart';
+import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/graphql_rocket_models.dart';
 import '../../data/models/space_location.dart';
 
 abstract class MapState extends Equatable {
@@ -17,27 +20,19 @@ class MapLoading extends MapState {
 }
 
 class MapLoaded extends MapState {
-  final List<SpaceLocation> allLocations;
-  final List<SpaceLocation> filteredLocations;
-  final FlightTrajectory? currentTrajectory;
-  final List<ObservationLocation> observationPoints;
-  final String mapStyle;
-  final double? userLatitude;
-  final double? userLongitude;
+  final List<GraphQLLaunch> launchLocations;
+  final List<LandpadModel> landingZones;
+  final List<GraphQLRocket> rockets;
 
   const MapLoaded({
-    required this.allLocations,
-    required this.filteredLocations,
-    this.currentTrajectory,
-    this.observationPoints = const [],
-    this.mapStyle = '',
-    this.userLatitude,
-    this.userLongitude,
+    required this.launchLocations,
+    required this.landingZones,
+    required this.rockets,
   });
 
   MapLoaded copyWith({
-    List<SpaceLocation>? allLocations,
-    List<SpaceLocation>? filteredLocations,
+    List<GraphQLLaunch>? allLocations,
+    List<LandpadModel>? filteredLocations,
     FlightTrajectory? currentTrajectory,
     List<ObservationLocation>? observationPoints,
     String? mapStyle,
@@ -46,26 +41,17 @@ class MapLoaded extends MapState {
     bool clearTrajectory = false,
   }) {
     return MapLoaded(
-      allLocations: allLocations ?? this.allLocations,
-      filteredLocations: filteredLocations ?? this.filteredLocations,
-      currentTrajectory:
-          clearTrajectory ? null : currentTrajectory ?? this.currentTrajectory,
-      observationPoints: observationPoints ?? this.observationPoints,
-      mapStyle: mapStyle ?? this.mapStyle,
-      userLatitude: userLatitude ?? this.userLatitude,
-      userLongitude: userLongitude ?? this.userLongitude,
+      launchLocations: allLocations ?? launchLocations,
+      landingZones: filteredLocations ?? landingZones,
+      rockets: rockets,
     );
   }
 
   @override
   List<Object?> get props => [
-        allLocations,
-        filteredLocations,
-        currentTrajectory,
-        observationPoints,
-        mapStyle,
-        userLatitude,
-        userLongitude,
+        launchLocations,
+        landingZones,
+        rockets,
       ];
 }
 

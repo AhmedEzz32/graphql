@@ -34,7 +34,7 @@ class _LaunchDetailsScreenState extends State<LaunchDetailsScreen> {
             return const Center(child: CircularProgressIndicator());
           } else if (state is GraphQLLaunchDetailsLoaded) {
             return buildGraphQLLaunchDetailsCard(
-                context, state.launch, DateTime.parse(state.launch.dateUtc!));
+                context, state.launch, DateTime.parse(state.launch.launchDateUtc!));
           } else if (state is GraphQLLaunchError) {
             return buildErrorWidget(context, state.message, () {
               context

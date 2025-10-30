@@ -120,14 +120,14 @@ class _LaunchScreenState extends State<LaunchScreen> {
                     ),
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  'Flight #${launch.flightNumber}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
+                // const Spacer(),
+                // Text(
+                //   'Flight #${launch.flightNumber}',
+                //   style: const TextStyle(
+                //     fontWeight: FontWeight.bold,
+                //     color: Colors.grey,
+                //   ),
+                // ),
               ],
             ),
             const SizedBox(height: 8),
@@ -147,7 +147,7 @@ class _LaunchScreenState extends State<LaunchScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Date: ${_formatDate(launch.dateUtc)}',
+              'Date: ${_formatDate(launch.launchDateUtc)}',
               style: const TextStyle(
                 color: Colors.grey,
               ),

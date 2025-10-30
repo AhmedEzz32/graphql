@@ -8,16 +8,17 @@ abstract class MapEvent extends Equatable {
 }
 
 class LoadMapData extends MapEvent {
-  const LoadMapData();
-}
 
-class FilterLocationsByType extends MapEvent {
-  final List<String> selectedTypes;
-
-  const FilterLocationsByType(this.selectedTypes);
+  final int limit;
+  final int offset;
+  
+  const LoadMapData({
+    this.limit = 50,
+    this.offset = 0,
+  });
 
   @override
-  List<Object?> get props => [selectedTypes];
+  List<Object?> get props => [limit, offset];
 }
 
 class ShowTrajectory extends MapEvent {

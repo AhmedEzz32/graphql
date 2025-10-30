@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:spacex_information_app/core/services/location_permission_service.dart';
 import 'package:spacex_information_app/core/utils/network/graphql/config/graphql_config.dart';
 import 'package:spacex_information_app/feature/launch_screen/persentation/view_model/data/launch_bloc_state.dart';
 import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/data/rocket_bloc_state.dart';
@@ -11,6 +12,7 @@ void main() async {
 
   try {
     await GraphQLConfig.initialize();
+    await LocationPermissionService().initialize();
   } catch (e) {
     debugPrint('Failed to initialize GraphQL: $e');
   }

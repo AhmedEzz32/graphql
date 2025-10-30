@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.spacex_information_app"
-    compileSdk = 34
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

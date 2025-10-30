@@ -20,7 +20,6 @@ class GraphQLRocket extends Equatable {
   final String country;
   final String company;
   final String description;
-  final String wikipedia;
   final GraphQLRocketHeight height;
   final GraphQLRocketDiameter diameter;
   final GraphQLRocketMass mass;
@@ -47,7 +46,6 @@ class GraphQLRocket extends Equatable {
     required this.country,
     required this.company,
     required this.description,
-    required this.wikipedia,
     required this.height,
     required this.diameter,
     required this.mass,
@@ -77,7 +75,6 @@ class GraphQLRocket extends Equatable {
         country,
         company,
         description,
-        wikipedia,
         height,
         diameter,
         mass,

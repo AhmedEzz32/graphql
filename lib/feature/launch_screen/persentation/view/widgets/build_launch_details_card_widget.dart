@@ -19,7 +19,7 @@ Widget buildGraphQLLaunchDetailsCard(
           ),
           const SizedBox(height: 12),
           buildDetailRowWidget('Mission', 'No Name'),
-          buildDetailRowWidget('Flight Number', launch.flightNumber.toString()),
+          // buildDetailRowWidget('Flight Number', launch.flightNumber.toString()),
           if (launchDate != null) ...[
             buildDetailRowWidget(
                 'Date', DateFormat('MMMM dd, yyyy').format(launchDate)),

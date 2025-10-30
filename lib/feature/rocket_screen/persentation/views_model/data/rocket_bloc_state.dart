@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:spacex_information_app/core/errors/failures.dart';
 import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/data/rocket_event_bloc.dart';
 import 'package:spacex_information_app/core/utils/network/graphql/config/graphql_config.dart';
 import 'package:spacex_information_app/core/utils/network/graphql/queries/rocket_queries.dart';
@@ -101,7 +102,7 @@ class GraphQLRocketBloc extends Bloc<GraphQLRocketEvent, GraphQLRocketState> {
 
       if (result.hasException) {
         emit(GraphQLRocketError(
-          message: _getErrorMessage(result.exception!),
+          message: GraphQLErrorHandler.handleError(result.exception!),
           isNetworkError: _isNetworkError(result.exception!),
         ));
         return;
@@ -147,7 +148,7 @@ class GraphQLRocketBloc extends Bloc<GraphQLRocketEvent, GraphQLRocketState> {
 
       if (result.hasException) {
         emit(GraphQLRocketError(
-          message: _getErrorMessage(result.exception!),
+          message: GraphQLErrorHandler.handleError(result.exception!),
           isNetworkError: _isNetworkError(result.exception!),
         ));
         return;
@@ -183,7 +184,7 @@ class GraphQLRocketBloc extends Bloc<GraphQLRocketEvent, GraphQLRocketState> {
 
       if (result.hasException) {
         emit(GraphQLRocketError(
-          message: _getErrorMessage(result.exception!),
+          message: GraphQLErrorHandler.handleError(result.exception!),
           isNetworkError: _isNetworkError(result.exception!),
         ));
         return;
@@ -223,7 +224,7 @@ class GraphQLRocketBloc extends Bloc<GraphQLRocketEvent, GraphQLRocketState> {
 
       if (result.hasException) {
         emit(GraphQLRocketError(
-          message: _getErrorMessage(result.exception!),
+          message: GraphQLErrorHandler.handleError(result.exception!),
           isNetworkError: _isNetworkError(result.exception!),
         ));
         return;
@@ -241,21 +242,6 @@ class GraphQLRocketBloc extends Bloc<GraphQLRocketEvent, GraphQLRocketState> {
     } catch (e) {
       emit(GraphQLRocketError(message: 'An unexpected error occurred: $e'));
     }
-  }
-
-  String _getErrorMessage(OperationException exception) {
-    if (exception.graphqlErrors.isNotEmpty) {
-      return exception.graphqlErrors.first.message;
-    }
-    if (exception.linkException != null) {
-      if (exception.linkException is NetworkException) {
-        return 'Network error. Please check your internet connection.';
-      }
-      if (exception.linkException is ServerException) {
-        return 'Server error. Please try again later.';
-      }
-    }
-    return 'An unexpected error occurred.';
   }
 
   bool _isNetworkError(OperationException exception) {

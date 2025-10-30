@@ -1,20 +1,21 @@
 import 'package:equatable/equatable.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/graphql_rocket_models.dart';
 
 part 'graphql_launch_models.g.dart';
 
 @JsonSerializable()
 class GraphQLLaunch extends Equatable {
   final String id;
-  @JsonKey(name: 'date_utc')
-  final String? dateUtc;
+  @JsonKey(name: 'mission_name')
+  final String missionName;
+  @JsonKey(name: 'launch_date_utc')
+  final String? launchDateUtc;
   @JsonKey(name: 'date_local')
   final String? dateLocal;
   final bool? success;
   final bool upcoming;
   final String? details;
-  @JsonKey(name: 'flight_number')
-  final int flightNumber;
   @JsonKey(name: 'static_fire_date_utc')
   final String? staticFireDateUtc;
   @JsonKey(name: 'tentative_max_precision')
@@ -30,12 +31,12 @@ class GraphQLLaunch extends Equatable {
 
   const GraphQLLaunch({
     required this.id,
-    this.dateUtc,
+    required this.missionName,
+    this.launchDateUtc,
     this.dateLocal,
     this.success,
     required this.upcoming,
     this.details,
-    required this.flightNumber,
     this.staticFireDateUtc,
     this.tentativeMaxPrecision,
     this.tbd,
@@ -55,12 +56,12 @@ class GraphQLLaunch extends Equatable {
   @override
   List<Object?> get props => [
         id,
-        dateUtc,
+        missionName,
+        launchDateUtc,
         dateLocal,
         success,
         upcoming,
         details,
-        flightNumber,
         staticFireDateUtc,
         tentativeMaxPrecision,
         tbd,
@@ -75,22 +76,24 @@ class GraphQLLaunch extends Equatable {
 
 @JsonSerializable()
 class GraphQLLaunchRocket extends Equatable {
-  final String id;
+  @JsonKey(name: 'rocket_name')
   final String name;
+  @JsonKey(name: 'rocket_type')
   final String type;
   @JsonKey(name: 'first_stage')
   final GraphQLLaunchFirstStage? firstStage;
   @JsonKey(name: 'second_stage')
   final GraphQLLaunchSecondStage? secondStage;
   final GraphQLFairings? fairings;
+  final GraphQLRocket? rocket;
 
   const GraphQLLaunchRocket({
-    required this.id,
     required this.name,
     required this.type,
     this.firstStage,
     this.secondStage,
     this.fairings,
+    this.rocket,
   });
 
   factory GraphQLLaunchRocket.fromJson(Map<String, dynamic> json) =>
@@ -100,7 +103,6 @@ class GraphQLLaunchRocket extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
         name,
         type,
         firstStage,
