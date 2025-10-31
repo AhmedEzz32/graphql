@@ -86,8 +86,12 @@ dev_dependencies:
 flutter:
   assets:
     - assets/icons/
-    - assets/images/
   uses-material-design: true
+
+flutter_assets:
+  assets_path: assets/icons/
+  output_path: lib/core/
+  filename: assets.dart
 
   # To add assets to your application, add an assets section, like this:
   # assets:

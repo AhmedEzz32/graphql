@@ -14,7 +14,6 @@ Widget buildCompanyInfoWidget(BuildContext context, Company company) {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Company header
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -84,7 +83,6 @@ Widget buildCompanyInfoWidget(BuildContext context, Company company) {
           ),
         ),
         const SizedBox(height: 24),
-
         Text(
           'Key Metrics',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -127,7 +125,6 @@ Widget buildCompanyInfoWidget(BuildContext context, Company company) {
           ],
         ),
         const SizedBox(height: 24),
-
         Text(
           'Leadership',
           style: Theme.of(context)
@@ -138,7 +135,6 @@ Widget buildCompanyInfoWidget(BuildContext context, Company company) {
         const SizedBox(height: 12),
         buildLeaderRowWidget('Founder', company.founder),
         const SizedBox(height: 24),
-
         Text(
           'Headquarters',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -148,7 +144,6 @@ Widget buildCompanyInfoWidget(BuildContext context, Company company) {
         const SizedBox(height: 12),
         buildValuationCardWidget(context, company, numberFormat),
         const SizedBox(height: 24),
-
         Text(
           'Company History',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(

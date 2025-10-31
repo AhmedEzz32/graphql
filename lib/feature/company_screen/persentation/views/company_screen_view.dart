@@ -42,10 +42,6 @@ class _CompanyScreenState extends State<CompanyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: buildCompanyInfoWidget(context, _companyData),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const Icon(Icons.refresh),
-      ),
     );
   }
 }

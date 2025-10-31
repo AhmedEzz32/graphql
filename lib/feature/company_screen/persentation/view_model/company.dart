@@ -1,4 +1,3 @@
-// Simple Company model for static company information
 class Company {
   final String name;
   final String founder;

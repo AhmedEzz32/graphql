@@ -76,6 +76,21 @@ class FilterLaunches extends GraphQLLaunchEvent {
   List<Object?> get props => [rocketName, searchQuery, showPast, showUpcoming];
 }
 
-class RefreshLaunches extends GraphQLLaunchEvent {
-  const RefreshLaunches();
+class UpdateFilterState extends GraphQLLaunchEvent {
+  final String? searchQuery;
+  final bool? showPast;
+  final bool? showUpcoming;
+
+  const UpdateFilterState({
+    this.searchQuery,
+    this.showPast,
+    this.showUpcoming,
+  });
+
+  @override
+  List<Object?> get props => [searchQuery, showPast, showUpcoming];
+}
+
+class ClearFilters extends GraphQLLaunchEvent {
+  const ClearFilters();
 }

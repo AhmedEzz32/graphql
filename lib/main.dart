@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:spacex_information_app/core/services/location_permission_service.dart';
 import 'package:spacex_information_app/core/utils/network/graphql/config/graphql_config.dart';
-import 'package:spacex_information_app/feature/launch_screen/persentation/view_model/data/launch_bloc_state.dart';
-import 'package:spacex_information_app/feature/rocket_screen/persentation/views_model/data/rocket_bloc_state.dart';
-import 'package:spacex_information_app/feature/map_screen/presentation/view_models/map_bloc.dart';
+import 'package:spacex_information_app/feature/launch_screen/data/graph_launch_bloc.dart';
+import 'package:spacex_information_app/feature/map_screen/data/space_map_bloc.dart';
+import 'package:spacex_information_app/feature/rocket_screen/data/graph_rocket_bloc.dart';
 import 'feature/home_screen/persentation/views/home_screen_view.dart';
 
 void main() async {
@@ -33,8 +33,8 @@ class MyApp extends StatelessWidget {
         BlocProvider<GraphQLLaunchBloc>(
           create: (context) => GraphQLLaunchBloc(),
         ),
-        BlocProvider<MapBloc>(
-          create: (context) => MapBloc(),
+        BlocProvider<SpaceMapBloc>(
+          create: (context) => SpaceMapBloc(),
         ),
       ],
       child: MaterialApp(

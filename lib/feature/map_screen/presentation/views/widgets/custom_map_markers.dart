@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/space_location.dart';
+import '../../view_models/space_location.dart';
 
 class CustomMapMarkers {
   static Widget buildLaunchSiteMarker({

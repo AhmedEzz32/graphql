@@ -1,90 +1,20 @@
-// States
-import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:spacex_information_app/core/errors/failures.dart';
 import 'package:spacex_information_app/core/utils/network/graphql/config/graphql_config.dart';
 import 'package:spacex_information_app/core/utils/network/graphql/queries/launches_queries.dart';
-import 'package:spacex_information_app/feature/launch_screen/persentation/view_model/data/launch_event_bloc.dart';
+import 'package:spacex_information_app/feature/launch_screen/data/launch_event_bloc.dart';
+import 'package:spacex_information_app/feature/launch_screen/data/launch_state_bloc.dart';
 import 'package:spacex_information_app/feature/launch_screen/persentation/view_model/graphql_launch_models.dart';
-
-abstract class GraphQLLaunchState extends Equatable {
-  const GraphQLLaunchState();
-
-  @override
-  List<Object?> get props => [];
-}
-
-class GraphQLLaunchInitial extends GraphQLLaunchState {
-  const GraphQLLaunchInitial();
-}
-
-class GraphQLLaunchLoading extends GraphQLLaunchState {
-  const GraphQLLaunchLoading();
-}
-
-class GraphQLLaunchesLoaded extends GraphQLLaunchState {
-  final List<GraphQLLaunch> launches;
-  final bool hasReachedMax;
-  final bool isRefreshing;
-  final String? currentFilter;
-
-  const GraphQLLaunchesLoaded({
-    required this.launches,
-    this.hasReachedMax = false,
-    this.isRefreshing = false,
-    this.currentFilter,
-  });
-
-  GraphQLLaunchesLoaded copyWith({
-    List<GraphQLLaunch>? launches,
-    bool? hasReachedMax,
-    bool? isRefreshing,
-    String? currentFilter,
-  }) {
-    return GraphQLLaunchesLoaded(
-      launches: launches ?? this.launches,
-      hasReachedMax: hasReachedMax ?? this.hasReachedMax,
-      isRefreshing: isRefreshing ?? this.isRefreshing,
-      currentFilter: currentFilter ?? this.currentFilter,
-    );
-  }
-
-  @override
-  List<Object?> get props =>
-      [launches, hasReachedMax, isRefreshing, currentFilter];
-}
-
-class GraphQLLaunchDetailsLoaded extends GraphQLLaunchState {
-  final GraphQLLaunch launch;
-
-  const GraphQLLaunchDetailsLoaded(this.launch);
-
-  @override
-  List<Object?> get props => [launch];
-}
-
-class GraphQLLaunchError extends GraphQLLaunchState {
-  final String message;
-  final bool isNetworkError;
-
-  const GraphQLLaunchError({
-    required this.message,
-    this.isNetworkError = false,
-  });
-
-  @override
-  List<Object?> get props => [message, isNetworkError];
-}
 
 class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
   GraphQLLaunchBloc() : super(const GraphQLLaunchInitial()) {
     on<FetchLaunches>(_onFetchLaunches);
     on<FetchPastLaunches>(_onFetchPastLaunches);
     on<FetchUpcomingLaunches>(_onFetchUpcomingLaunches);
-    on<FetchLaunchDetails>(_onFetchLaunchDetails);
     on<FilterLaunches>(_onFilterLaunches);
-    on<RefreshLaunches>(_onRefreshLaunches);
+    on<UpdateFilterState>(_onUpdateFilterState);
+    on<ClearFilters>(_onClearFilters);
   }
 
   Future<void> _onFetchLaunches(
@@ -113,7 +43,7 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
       if (result.hasException) {
         emit(GraphQLLaunchError(
           message: GraphQLErrorHandler.handleError(result.exception!),
-          isNetworkError: _isNetworkError(result.exception!),
+          isNetworkError: GraphQLErrorHandler.isNetworkError(result.exception!),
         ));
         return;
       }
@@ -164,7 +94,7 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
       if (result.hasException) {
         emit(GraphQLLaunchError(
           message: GraphQLErrorHandler.handleError(result.exception!),
-          isNetworkError: _isNetworkError(result.exception!),
+          isNetworkError: GraphQLErrorHandler.isNetworkError(result.exception!),
         ));
         return;
       }
@@ -217,7 +147,7 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
       if (result.hasException) {
         emit(GraphQLLaunchError(
           message: GraphQLErrorHandler.handleError(result.exception!),
-          isNetworkError: _isNetworkError(result.exception!),
+          isNetworkError: GraphQLErrorHandler.isNetworkError(result.exception!),
         ));
         return;
       }
@@ -240,42 +170,6 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
           hasReachedMax: launches.length < event.limit,
           currentFilter: 'upcoming',
         ));
-      }
-    } catch (e) {
-      emit(GraphQLLaunchError(message: 'An unexpected error occurred: $e'));
-    }
-  }
-
-  Future<void> _onFetchLaunchDetails(
-    FetchLaunchDetails event,
-    Emitter<GraphQLLaunchState> emit,
-  ) async {
-    try {
-      emit(const GraphQLLaunchLoading());
-
-      final client = GraphQLConfig.clientInstance;
-      final QueryOptions options = QueryOptions(
-        document: gql(GET_LAUNCH_DETAILS_QUERY),
-        variables: {'id': event.launchId},
-        fetchPolicy: FetchPolicy.cacheFirst,
-      );
-
-      final QueryResult result = await client.query(options);
-
-      if (result.hasException) {
-        emit(GraphQLLaunchError(
-          message: GraphQLErrorHandler.handleError(result.exception!),
-          isNetworkError: _isNetworkError(result.exception!),
-        ));
-        return;
-      }
-
-      final Map<String, dynamic>? launchData = result.data?['launch'];
-      if (launchData != null) {
-        final GraphQLLaunch launch = GraphQLLaunch.fromJson(launchData);
-        emit(GraphQLLaunchDetailsLoaded(launch));
-      } else {
-        emit(const GraphQLLaunchError(message: 'Launch not found'));
       }
     } catch (e) {
       emit(GraphQLLaunchError(message: 'An unexpected error occurred: $e'));
@@ -309,7 +203,8 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
         if (result.hasException) {
           emit(GraphQLLaunchError(
             message: GraphQLErrorHandler.handleError(result.exception!),
-            isNetworkError: _isNetworkError(result.exception!),
+            isNetworkError:
+                GraphQLErrorHandler.isNetworkError(result.exception!),
           ));
           return;
         }
@@ -333,7 +228,8 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
         if (result.hasException) {
           emit(GraphQLLaunchError(
             message: GraphQLErrorHandler.handleError(result.exception!),
-            isNetworkError: _isNetworkError(result.exception!),
+            isNetworkError:
+                GraphQLErrorHandler.isNetworkError(result.exception!),
           ));
           return;
         }
@@ -342,7 +238,6 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
         allLaunches =
             launchData.map((json) => GraphQLLaunch.fromJson(json)).toList();
       } else {
-        // Fetch all launches (default or when both filters are applied)
         final QueryOptions options = QueryOptions(
           document: gql(GET_LAUNCHES_QUERY),
           variables: {
@@ -357,7 +252,8 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
         if (result.hasException) {
           emit(GraphQLLaunchError(
             message: GraphQLErrorHandler.handleError(result.exception!),
-            isNetworkError: _isNetworkError(result.exception!),
+            isNetworkError:
+                GraphQLErrorHandler.isNetworkError(result.exception!),
           ));
           return;
         }
@@ -366,9 +262,7 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
         allLaunches =
             launchData.map((json) => GraphQLLaunch.fromJson(json)).toList();
 
-        // Apply local filtering if both past and upcoming are selected or neither
         if (event.showPast == true && event.showUpcoming == true) {
-          // Show all - no additional filtering needed
         } else if (event.showPast == true && event.showUpcoming != true) {
           allLaunches =
               allLaunches.where((launch) => launch.upcoming != true).toList();
@@ -378,7 +272,6 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
         }
       }
 
-      // Apply search filter if provided
       if (event.searchQuery != null && event.searchQuery!.isNotEmpty) {
         final searchQuery = event.searchQuery!.toLowerCase();
         allLaunches = allLaunches.where((launch) {
@@ -388,7 +281,6 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
         }).toList();
       }
 
-      // Apply rocket name filter if provided
       if (event.rocketName != null && event.rocketName!.isNotEmpty) {
         allLaunches = allLaunches
             .where((launch) => launch.rocket.name
@@ -400,57 +292,40 @@ class GraphQLLaunchBloc extends Bloc<GraphQLLaunchEvent, GraphQLLaunchState> {
       emit(GraphQLLaunchesLoaded(
         launches: allLaunches,
         currentFilter: 'filtered',
+        searchQuery: event.searchQuery,
+        showPast: event.showPast,
+        showUpcoming: event.showUpcoming,
       ));
     } catch (e) {
       emit(GraphQLLaunchError(message: 'An unexpected error occurred: $e'));
     }
   }
 
-  Future<void> _onRefreshLaunches(
-    RefreshLaunches event,
+  void _onUpdateFilterState(
+    UpdateFilterState event,
     Emitter<GraphQLLaunchState> emit,
-  ) async {
-    try {
-      if (state is GraphQLLaunchesLoaded) {
-        final currentState = state as GraphQLLaunchesLoaded;
-        emit(currentState.copyWith(isRefreshing: true));
-      }
-
-      final client = GraphQLConfig.clientInstance;
-      final QueryOptions options = QueryOptions(
-        document: gql(GET_LAUNCHES_QUERY),
-        variables: {
-          'limit': 10,
-          'offset': 0,
-        },
-        fetchPolicy: FetchPolicy.networkOnly,
-      );
-
-      final QueryResult result = await client.query(options);
-
-      if (result.hasException) {
-        emit(GraphQLLaunchError(
-          message: GraphQLErrorHandler.handleError(result.exception!),
-          isNetworkError: _isNetworkError(result.exception!),
-        ));
-        return;
-      }
-
-      final List<dynamic> launchData = result.data?['launches'] ?? [];
-      final List<GraphQLLaunch> launches =
-          launchData.map((json) => GraphQLLaunch.fromJson(json)).toList();
-
-      emit(GraphQLLaunchesLoaded(
-        launches: launches,
-        hasReachedMax: launches.length < 10,
-        isRefreshing: false,
+  ) {
+    if (state is GraphQLLaunchesLoaded) {
+      final currentState = state as GraphQLLaunchesLoaded;
+      emit(currentState.copyWith(
+        searchQuery: event.searchQuery,
+        showPast: event.showPast,
+        showUpcoming: event.showUpcoming,
       ));
-    } catch (e) {
-      emit(GraphQLLaunchError(message: 'An unexpected error occurred: $e'));
     }
   }
 
-  bool _isNetworkError(OperationException exception) {
-    return exception.linkException is NetworkException;
+  void _onClearFilters(
+    ClearFilters event,
+    Emitter<GraphQLLaunchState> emit,
+  ) {
+    if (state is GraphQLLaunchesLoaded) {
+      final currentState = state as GraphQLLaunchesLoaded;
+      emit(currentState.copyWith(
+        searchQuery: null,
+        showPast: null,
+        showUpcoming: null,
+      ));
+    }
   }
 }

@@ -1,5 +1,5 @@
 import 'dart:math';
-import '../data/models/space_location.dart';
+import 'space_location.dart';
 
 class ConstantMapData {
   // Real SpaceX launch sites with accurate coordinates
